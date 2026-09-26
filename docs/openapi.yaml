@@ -1,0 +1,517 @@
+openapi: 3.1.0
+info:
+  title: MineAds API
+  version: 0.1.0
+  description: >
+    API contract for the MineAds backend. This initial specification documents
+    the Plugin API used by Minecraft servers plus a basic health endpoint.
+servers:
+  - url: http://localhost:8000/api
+    description: Local Docker Compose backend
+tags:
+  - name: Health
+  - name: Plugin API
+paths:
+  /health:
+    get:
+      tags: [Health]
+      summary: Check API health
+      operationId: getHealth
+      responses:
+        "200":
+          description: API is healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
+  /plugin/v1/activate:
+    post:
+      tags: [Plugin API]
+      summary: Activate a Minecraft server plugin
+      description: >
+        Request sent once when a publisher connects a Minecraft server to MineAds.
+        Exchanges a dashboard setup token for a long-lived server API token.
+      operationId: activatePluginServer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ActivateRequest"
+      responses:
+        "201":
+          description: Server activated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ActivateResponse"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+  /plugin/v1/heartbeat:
+    post:
+      tags: [Plugin API]
+      summary: Record server heartbeat
+      description: >
+        Periodic request sent by the plugin with server health and runtime metadata.
+        Used for dashboard status, diagnostics, remote config, and validation signals.
+      operationId: recordPluginHeartbeat
+      security:
+        - ServerBearerAuth: []
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/HeartbeatRequest"
+      responses:
+        "200":
+          description: Heartbeat accepted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HeartbeatResponse"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+  /plugin/v1/ads/request:
+    post:
+      tags: [Plugin API]
+      summary: Request ads for audience buckets
+      description: >
+        Request sent before the plugin displays a chat ad. The plugin groups
+        eligible online players by country/language and asks MineAds for one ad
+        decision per audience bucket. MineAds only serves campaigns that match
+        targeting and have enough advertiser balance plus remaining campaign
+        budget for the requested audience.
+      operationId: requestPluginAds
+      security:
+        - ServerBearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdRequest"
+      responses:
+        "200":
+          description: Ad decisions returned
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdResponse"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+  /plugin/v1/impressions:
+    post:
+      tags: [Plugin API]
+      summary: Report displayed ad impressions
+      description: >
+        Request sent after the plugin displays a served ad to one or more
+        players. MineAds validates the delivery token, records raw impressions,
+        and queues each new raw impression for validation. Only valid impressions
+        become billable and create advertiser spend / publisher earning ledger
+        entries.
+      operationId: reportPluginImpressions
+      security:
+        - ServerBearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ImpressionReportRequest"
+      responses:
+        "200":
+          description: Impression report accepted for validation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ImpressionReportResponse"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "404":
+          description: Unknown ad delivery
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+components:
+  securitySchemes:
+    ServerBearerAuth:
+      type: http
+      scheme: bearer
+      description: Server API token returned by `/plugin/v1/activate`.
+  responses:
+    Unauthenticated:
+      description: Missing or invalid server bearer token
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            message: Unauthenticated.
+    ValidationError:
+      description: Request validation failed
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+  schemas:
+    HealthResponse:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          description: Short service health status.
+          example: ok
+    ErrorResponse:
+      type: object
+      required: [message]
+      properties:
+        message:
+          type: string
+          description: Human-readable error summary.
+    ActivateRequest:
+      type: object
+      description: Request payload for activating a pending server using a dashboard-generated setup token.
+      required: [setup_token]
+      properties:
+        setup_token:
+          type: string
+          description: Short-lived setup token copied from the publisher dashboard.
+          example: ma_setup_example
+    ActivateResponse:
+      type: object
+      required: [server_id, api_token, config]
+      properties:
+        server_id:
+          type: integer
+          format: int64
+          description: MineAds server identifier assigned to this Minecraft server.
+          example: 1
+        api_token:
+          type: string
+          description: Long-lived bearer token the plugin must use for authenticated Plugin API calls. Shown only once.
+          example: ma_srv_example
+        config:
+          description: Initial remote plugin configuration.
+          $ref: "#/components/schemas/PluginConfig"
+    HeartbeatRequest:
+      type: object
+      description: Optional server runtime metadata sent by the plugin on a regular interval.
+      properties:
+        plugin_version:
+          type: string
+          description: Version of the installed MineAds Minecraft plugin.
+          nullable: true
+          example: 0.1.0
+        minecraft_version:
+          type: string
+          description: Minecraft server version reported by the plugin.
+          nullable: true
+          example: 1.21.1
+        platform:
+          type: string
+          description: Server platform or implementation, such as Paper, Spigot, or Folia.
+          nullable: true
+          example: paper
+        online_players:
+          type: integer
+          description: Current number of online players on the server.
+          minimum: 0
+          example: 84
+        max_players:
+          type: integer
+          description: Configured maximum player capacity for the server, if available.
+          minimum: 0
+          nullable: true
+          example: 200
+        tps:
+          type: number
+          description: Current server ticks per second, used as a health signal.
+          minimum: 0
+          maximum: 20
+          nullable: true
+          example: 19.8
+    HeartbeatResponse:
+      type: object
+      required: [ok, server_status, config]
+      properties:
+        ok:
+          type: boolean
+          description: Whether the heartbeat was accepted.
+          example: true
+        server_status:
+          type: string
+          description: Current MineAds status for the server.
+          example: active
+        config:
+          description: Remote plugin configuration that should be applied by the server.
+          $ref: "#/components/schemas/PluginConfig"
+    PluginConfig:
+      type: object
+      required: [enabled, placements, reporting]
+      properties:
+        enabled:
+          type: boolean
+          description: Global switch indicating whether the plugin should serve ads.
+        placements:
+          type: object
+          required: [chat]
+          properties:
+            chat:
+              type: object
+              required:
+                - enabled
+                - min_seconds_between_ads
+                - max_ads_per_player_per_hour
+                - min_online_players
+              properties:
+                enabled:
+                  type: boolean
+                  description: Whether chat ads are currently enabled for this server.
+                min_seconds_between_ads:
+                  type: integer
+                  description: Minimum delay between chat ad placements on this server.
+                  example: 300
+                max_ads_per_player_per_hour:
+                  type: integer
+                  description: Maximum chat ads the plugin should show to the same player per hour.
+                  example: 4
+                min_online_players:
+                  type: integer
+                  description: Minimum online player count required before serving chat ads.
+                  example: 1
+        reporting:
+          type: object
+          required: [batch_size, flush_seconds]
+          properties:
+            batch_size:
+              type: integer
+              description: Preferred maximum number of events the plugin should send in one report.
+              example: 100
+            flush_seconds:
+              type: integer
+              description: Preferred maximum delay before the plugin flushes queued tracking events.
+              example: 30
+    AdRequest:
+      type: object
+      description: Request payload asking MineAds for ad decisions for one or more audience buckets.
+      required: [placement, audiences]
+      properties:
+        placement:
+          type: string
+          description: Ad placement type being requested. The MVP currently supports chat only.
+          enum: [chat]
+        request_id:
+          type: string
+          description: Optional plugin-generated request identifier for debugging/idempotency in future versions.
+          nullable: true
+          example: req_01J
+        audiences:
+          type: array
+          description: Audience buckets grouped by coarse targeting attributes such as country and language.
+          minItems: 1
+          maxItems: 20
+          items:
+            $ref: "#/components/schemas/AudienceBucket"
+    AudienceBucket:
+      type: object
+      description: Group of players sharing coarse targeting attributes for a single ad decision.
+      required: [audience_id, eligible_player_count]
+      properties:
+        audience_id:
+          type: string
+          description: Plugin-generated identifier used to map each response decision back to this audience bucket.
+          example: aud_us_en
+        country:
+          type: string
+          description: ISO 3166-1 alpha-2 country code for the bucket, derived without storing raw IP addresses.
+          nullable: true
+          minLength: 2
+          maxLength: 2
+          example: US
+        language:
+          type: string
+          description: Language or locale bucket for the audience, usually based on Minecraft client locale.
+          nullable: true
+          maxLength: 16
+          example: en
+        eligible_player_count:
+          type: integer
+          description: Number of players eligible to receive an ad in this bucket after plugin-side caps/filtering.
+          minimum: 0
+          example: 42
+        players:
+          type: array
+          description: Optional anonymous player list for server-side frequency capping and validation. May be omitted for MVP simplicity.
+          maxItems: 250
+          items:
+            $ref: "#/components/schemas/AudiencePlayer"
+    AudiencePlayer:
+      type: object
+      description: Optional anonymous player identity included in an ad request for validation/frequency-cap use.
+      required: [player_session_id, player_hash]
+      properties:
+        player_session_id:
+          type: string
+          description: Plugin-generated session identifier for this player connection. Do not send raw Minecraft UUIDs.
+          example: ps_01J
+        player_hash:
+          type: string
+          description: Stable hashed player identifier. Should be derived from the Minecraft UUID using a privacy-preserving hash/HMAC.
+          example: 9f86d081884c7d659a2feaa0c55ad015
+    AdResponse:
+      type: object
+      required: [decisions]
+      properties:
+        decisions:
+          type: array
+          description: One ad decision per requested audience bucket.
+          items:
+            oneOf:
+              - $ref: "#/components/schemas/ServeDecision"
+              - $ref: "#/components/schemas/NoFillDecision"
+    ServeDecision:
+      type: object
+      required:
+        - audience_id
+        - decision
+        - ad_delivery_id
+        - campaign_id
+        - creative_id
+        - placement
+        - message
+        - tracking
+      properties:
+        audience_id:
+          type: string
+          description: Audience bucket identifier from the request.
+          example: aud_us_en
+        decision:
+          type: string
+          description: Indicates that an ad should be shown to this audience bucket.
+          enum: [serve]
+        ad_delivery_id:
+          type: integer
+          format: int64
+          description: Delivery identifier that must be included when reporting impressions.
+        campaign_id:
+          type: integer
+          format: int64
+          description: Campaign selected by MineAds.
+        creative_id:
+          type: integer
+          format: int64
+          description: Creative selected by MineAds.
+        placement:
+          type: string
+          description: Placement this ad is intended for.
+          enum: [chat]
+        message:
+          description: Chat message payload to display to eligible players.
+          $ref: "#/components/schemas/AdMessage"
+        tracking:
+          description: Tracking token and expiration used when reporting impressions.
+          $ref: "#/components/schemas/AdTracking"
+    NoFillDecision:
+      type: object
+      required: [audience_id, decision, retry_after_seconds]
+      properties:
+        audience_id:
+          type: string
+          description: Audience bucket identifier from the request.
+          example: aud_unknown
+        decision:
+          type: string
+          description: Indicates that no eligible ad is available for this audience bucket.
+          enum: [no_fill]
+        retry_after_seconds:
+          type: integer
+          description: Suggested delay before asking for another ad for this bucket.
+          example: 120
+    AdMessage:
+      type: object
+      required: [plain]
+      properties:
+        plain:
+          type: string
+          description: Plain chat message text to display. The plugin may format this for Minecraft chat.
+          example: "[Sponsored] Join ExampleMC for weekly events."
+        click_url:
+          type: string
+          description: Optional advertiser URL associated with the chat ad.
+          nullable: true
+          format: uri
+    AdTracking:
+      type: object
+      required: [impression_token, expires_at]
+      properties:
+        impression_token:
+          type: string
+          description: Short-lived token proving the impression report belongs to this ad delivery.
+          example: imp_example
+        expires_at:
+          type: string
+          description: Timestamp after which the impression token should no longer be accepted.
+          format: date-time
+          nullable: true
+    ImpressionReportRequest:
+      type: object
+      description: Request payload reporting which players were shown a previously served ad.
+      required: [ad_delivery_id, impression_token, displayed_at, players]
+      properties:
+        ad_delivery_id:
+          type: integer
+          format: int64
+          description: Delivery identifier returned by the ad request endpoint.
+        impression_token:
+          type: string
+          description: Short-lived token returned with the served ad decision.
+        displayed_at:
+          type: string
+          description: Timestamp when the plugin displayed the ad to the listed players.
+          format: date-time
+        players:
+          type: array
+          description: Players who were actually shown the ad.
+          minItems: 1
+          maxItems: 500
+          items:
+            $ref: "#/components/schemas/ImpressionPlayer"
+    ImpressionPlayer:
+      type: object
+      description: Anonymous player identity for one player who saw the ad.
+      required: [player_hash]
+      properties:
+        player_session_id:
+          type: string
+          description: Optional plugin-generated session identifier previously sent in the ad request.
+          nullable: true
+          example: ps_01J
+        player_hash:
+          type: string
+          description: Stable hashed player identifier for the player who saw the ad. Do not send raw Minecraft UUIDs.
+          example: 9f86d081884c7d659a2feaa0c55ad015
+    ImpressionReportResponse:
+      type: object
+      required: [accepted, duplicates, status]
+      properties:
+        accepted:
+          type: integer
+          description: Number of newly accepted player impressions in this report.
+          example: 63
+        duplicates:
+          type: integer
+          description: Number of player impressions ignored because they were already reported for this delivery.
+          example: 0
+        status:
+          type: string
+          description: Processing status for the report. `queued` means newly accepted impressions were queued for validation.
+          example: queued

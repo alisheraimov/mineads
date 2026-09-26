@@ -1,0 +1,440 @@
+Project MineAds {
+  database_type: "PostgreSQL"
+  Note: "Visual reference for the MineAds database. Keep this file in sync with Laravel migrations in backend/database/migrations."
+}
+
+Table users {
+  id bigint [pk, increment]
+  name varchar
+  email varchar [unique]
+  email_verified_at timestamp [null]
+  password varchar
+  role varchar [not null, default: "advertiser"]
+  remember_token varchar [null]
+  created_at timestamp [null]
+  updated_at timestamp [null]
+
+  indexes {
+    role
+  }
+}
+
+Table advertiser_accounts {
+  id bigint [pk, increment]
+  user_id bigint [not null, unique]
+  name varchar
+  status varchar [not null, default: "active"]
+  currency varchar(3) [not null, default: "USD"]
+  created_at timestamp [null]
+  updated_at timestamp [null]
+
+  indexes {
+    status
+  }
+}
+
+Table publisher_accounts {
+  id bigint [pk, increment]
+  user_id bigint [not null, unique]
+  name varchar
+  status varchar [not null, default: "active"]
+  currency varchar(3) [not null, default: "USD"]
+  created_at timestamp [null]
+  updated_at timestamp [null]
+
+  indexes {
+    status
+  }
+}
+
+Table servers {
+  id bigint [pk, increment]
+  publisher_account_id bigint [not null]
+  name varchar
+  host varchar [null]
+  category varchar [null]
+  status varchar [not null, default: "pending"]
+  setup_token_hash varchar [unique, null]
+  setup_token_expires_at timestamp [null]
+  activated_at timestamp [null]
+  last_seen_at timestamp [null]
+  created_at timestamp [null]
+  updated_at timestamp [null]
+
+  indexes {
+    category
+    status
+    last_seen_at
+  }
+}
+
+Table server_api_tokens {
+  id bigint [pk, increment]
+  server_id bigint [not null]
+  name varchar [null]
+  token_hash varchar [unique]
+  last_used_at timestamp [null]
+  revoked_at timestamp [null]
+  created_at timestamp [null]
+  updated_at timestamp [null]
+
+  indexes {
+    revoked_at
+    (server_id, revoked_at)
+  }
+}
+
+Table campaigns {
+  id bigint [pk, increment]
+  advertiser_account_id bigint [not null]
+  name varchar
+  status varchar [not null, default: "draft"]
+  pricing_model varchar [not null, default: "cpm"]
+  daily_budget_micros bigint [null]
+  total_budget_micros bigint [null]
+  starts_at timestamp [null]
+  ends_at timestamp [null]
+  created_at timestamp [null]
+  updated_at timestamp [null]
+
+  indexes {
+    status
+    starts_at
+    ends_at
+    (advertiser_account_id, status)
+  }
+}
+
+Table ad_creatives {
+  id bigint [pk, increment]
+  campaign_id bigint [not null]
+  type varchar [not null, default: "chat"]
+  language varchar(16) [null]
+  message_text text
+  click_url varchar [null]
+  status varchar [not null, default: "pending_review"]
+  created_at timestamp [null]
+  updated_at timestamp [null]
+
+  indexes {
+    language
+    status
+    (campaign_id, status)
+  }
+}
+
+Table campaign_targets {
+  id bigint [pk, increment]
+  campaign_id bigint [not null]
+  country_code varchar(2) [null]
+  language varchar(16) [null]
+  server_category varchar [null]
+  created_at timestamp [null]
+  updated_at timestamp [null]
+
+  indexes {
+    (country_code, language)
+    (campaign_id, country_code, language)
+    (campaign_id, server_category)
+  }
+}
+
+Table rate_tiers {
+  id bigint [pk, increment]
+  name varchar [unique]
+  cpm_micros bigint [not null]
+  is_default boolean [not null, default: false]
+  sort_order int [not null, default: 0]
+  created_at timestamp [null]
+  updated_at timestamp [null]
+
+  indexes {
+    is_default
+  }
+}
+
+Table rate_tier_countries {
+  id bigint [pk, increment]
+  rate_tier_id bigint [not null]
+  country_code varchar(2) [unique]
+  created_at timestamp [null]
+  updated_at timestamp [null]
+
+  indexes {
+    (rate_tier_id, country_code)
+  }
+}
+
+Table server_heartbeats {
+  id bigint [pk, increment]
+  server_id bigint [not null]
+  plugin_version varchar [null]
+  minecraft_version varchar [null]
+  platform varchar [null]
+  online_players int [not null, default: 0]
+  max_players int [null]
+  tps decimal(5, 2) [null]
+  received_at timestamp [not null, default: `now()`]
+
+  indexes {
+    received_at
+    (server_id, received_at)
+  }
+}
+
+Table player_sessions {
+  id bigint [pk, increment]
+  server_id bigint [not null]
+  player_hash varchar(128)
+  session_token varchar(128) [unique]
+  country_code varchar(2) [null]
+  language varchar(16) [null]
+  joined_at timestamp
+  last_seen_at timestamp [null]
+  created_at timestamp [null]
+  updated_at timestamp [null]
+
+  indexes {
+    country_code
+    language
+    joined_at
+    last_seen_at
+    (server_id, player_hash)
+    (server_id, country_code, language)
+  }
+}
+
+Table ad_deliveries {
+  id bigint [pk, increment]
+  server_id bigint [not null]
+  campaign_id bigint [null]
+  creative_id bigint [null]
+  rate_tier_id bigint [null]
+  cpm_micros bigint [null]
+  placement varchar [not null, default: "chat"]
+  audience_country varchar(2) [null]
+  audience_language varchar(16) [null]
+  requested_player_count int [not null, default: 0]
+  decision varchar
+  impression_token_hash varchar [unique, null]
+  expires_at timestamp [null]
+  requested_at timestamp [not null, default: `now()`]
+
+  indexes {
+    decision
+    expires_at
+    requested_at
+    (server_id, requested_at)
+    (campaign_id, requested_at)
+    (audience_country, audience_language)
+  }
+}
+
+Table raw_impression_events {
+  id bigint [pk, increment]
+  ad_delivery_id bigint [not null]
+  server_id bigint [not null]
+  player_session_id bigint [null]
+  player_hash varchar(128)
+  displayed_at timestamp
+  received_at timestamp [not null, default: `now()`]
+  validation_status varchar [not null, default: "pending"]
+  invalid_reason varchar [null]
+  risk_score int [not null, default: 0]
+  validated_at timestamp [null]
+
+  indexes {
+    (ad_delivery_id, player_hash) [unique]
+    displayed_at
+    received_at
+    validation_status
+    validated_at
+    (server_id, received_at)
+    (player_hash, displayed_at)
+  }
+}
+
+Table validated_impressions {
+  id bigint [pk, increment]
+  raw_impression_event_id bigint [not null, unique]
+  advertiser_account_id bigint [not null]
+  publisher_account_id bigint [not null]
+  campaign_id bigint [not null]
+  creative_id bigint [not null]
+  server_id bigint [not null]
+  player_hash varchar(128)
+  billable_micros bigint [not null]
+  publisher_earning_micros bigint [not null]
+  platform_fee_micros bigint [not null]
+  validated_at timestamp [not null, default: `now()`]
+
+  indexes {
+    validated_at
+    (advertiser_account_id, validated_at)
+    (publisher_account_id, validated_at)
+    (campaign_id, validated_at)
+    (server_id, validated_at)
+  }
+}
+
+Table advertiser_ledger_entries {
+  id bigint [pk, increment]
+  advertiser_account_id bigint [not null]
+  campaign_id bigint [null]
+  type varchar
+  amount_micros bigint
+  currency varchar(3) [not null, default: "USD"]
+  reference_type varchar [null]
+  reference_id bigint [null]
+  created_at timestamp [null]
+  updated_at timestamp [null]
+
+  indexes {
+    type
+    (advertiser_account_id, created_at)
+    (campaign_id, created_at)
+    (reference_type, reference_id)
+  }
+}
+
+Table publisher_ledger_entries {
+  id bigint [pk, increment]
+  publisher_account_id bigint [not null]
+  server_id bigint [null]
+  type varchar
+  amount_micros bigint
+  currency varchar(3) [not null, default: "USD"]
+  reference_type varchar [null]
+  reference_id bigint [null]
+  created_at timestamp [null]
+  updated_at timestamp [null]
+
+  indexes {
+    type
+    (publisher_account_id, created_at)
+    (server_id, created_at)
+    (reference_type, reference_id)
+  }
+}
+
+Table payouts {
+  id bigint [pk, increment]
+  publisher_account_id bigint [not null]
+  status varchar [not null, default: "pending"]
+  amount_micros bigint [not null]
+  currency varchar(3) [not null, default: "USD"]
+  provider varchar [not null, default: "stripe"]
+  provider_payout_id varchar [unique, null]
+  period_start timestamp
+  period_end timestamp
+  paid_at timestamp [null]
+  created_at timestamp [null]
+  updated_at timestamp [null]
+
+  indexes {
+    status
+    period_start
+    period_end
+    (publisher_account_id, status)
+    (publisher_account_id, period_start, period_end)
+  }
+}
+
+Table password_reset_tokens {
+  email varchar [pk]
+  token varchar
+  created_at timestamp [null]
+}
+
+Table sessions {
+  id varchar [pk]
+  user_id bigint [null]
+  ip_address varchar(45) [null]
+  user_agent text [null]
+  payload text
+  last_activity int
+
+  indexes {
+    user_id
+    last_activity
+  }
+}
+
+Table cache {
+  key varchar [pk]
+  value text
+  expiration int
+}
+
+Table cache_locks {
+  key varchar [pk]
+  owner varchar
+  expiration int
+}
+
+Table jobs {
+  id bigint [pk, increment]
+  queue varchar
+  payload text
+  attempts int
+  reserved_at int [null]
+  available_at int
+  created_at int
+
+  indexes {
+    queue
+  }
+}
+
+Table job_batches {
+  id varchar [pk]
+  name varchar
+  total_jobs int
+  pending_jobs int
+  failed_jobs int
+  failed_job_ids text
+  options text [null]
+  cancelled_at int [null]
+  created_at int
+  finished_at int [null]
+}
+
+Table failed_jobs {
+  id bigint [pk, increment]
+  uuid varchar [unique]
+  connection text
+  queue text
+  payload text
+  exception text
+  failed_at timestamp
+}
+
+Ref: advertiser_accounts.user_id > users.id [delete: cascade]
+Ref: publisher_accounts.user_id > users.id [delete: cascade]
+Ref: servers.publisher_account_id > publisher_accounts.id [delete: cascade]
+Ref: server_api_tokens.server_id > servers.id [delete: cascade]
+Ref: campaigns.advertiser_account_id > advertiser_accounts.id [delete: cascade]
+Ref: ad_creatives.campaign_id > campaigns.id [delete: cascade]
+Ref: campaign_targets.campaign_id > campaigns.id [delete: cascade]
+Ref: rate_tier_countries.rate_tier_id > rate_tiers.id [delete: cascade]
+Ref: server_heartbeats.server_id > servers.id [delete: cascade]
+Ref: player_sessions.server_id > servers.id [delete: cascade]
+Ref: ad_deliveries.server_id > servers.id [delete: cascade]
+Ref: ad_deliveries.campaign_id > campaigns.id [delete: set null]
+Ref: ad_deliveries.creative_id > ad_creatives.id [delete: set null]
+Ref: ad_deliveries.rate_tier_id > rate_tiers.id [delete: set null]
+Ref: raw_impression_events.ad_delivery_id > ad_deliveries.id [delete: cascade]
+Ref: raw_impression_events.server_id > servers.id [delete: cascade]
+Ref: raw_impression_events.player_session_id > player_sessions.id [delete: set null]
+Ref: validated_impressions.raw_impression_event_id > raw_impression_events.id [delete: cascade]
+Ref: validated_impressions.advertiser_account_id > advertiser_accounts.id [delete: cascade]
+Ref: validated_impressions.publisher_account_id > publisher_accounts.id [delete: cascade]
+Ref: validated_impressions.campaign_id > campaigns.id [delete: cascade]
+Ref: validated_impressions.creative_id > ad_creatives.id [delete: cascade]
+Ref: validated_impressions.server_id > servers.id [delete: cascade]
+Ref: advertiser_ledger_entries.advertiser_account_id > advertiser_accounts.id [delete: cascade]
+Ref: advertiser_ledger_entries.campaign_id > campaigns.id [delete: set null]
+Ref: publisher_ledger_entries.publisher_account_id > publisher_accounts.id [delete: cascade]
+Ref: publisher_ledger_entries.server_id > servers.id [delete: set null]
+Ref: payouts.publisher_account_id > publisher_accounts.id [delete: cascade]
+Ref: sessions.user_id > users.id
