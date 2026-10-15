@@ -10,6 +10,7 @@ servers:
     description: Local Docker Compose backend
 tags:
   - name: Health
+  - name: Advertiser Portal
   - name: Plugin API
 paths:
   /health:
@@ -24,6 +25,38 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthResponse"
+  /advertiser/dashboard:
+    get:
+      tags: [Advertiser Portal]
+      summary: Get advertiser dashboard
+      description: >
+        Returns cached dashboard aggregates for the authenticated advertiser
+        account, including balance, campaign and creative counts, spend,
+        impressions, chart data, and running campaign rows.
+      operationId: getAdvertiserDashboard
+      security:
+        - SanctumBearerAuth: []
+      responses:
+        "200":
+          description: Advertiser dashboard aggregates
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdvertiserDashboardResponse"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          description: User is not an advertiser
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Advertiser account is not set up
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /plugin/v1/activate:
     post:
       tags: [Plugin API]
@@ -142,6 +175,10 @@ paths:
           $ref: "#/components/responses/ValidationError"
 components:
   securitySchemes:
+    SanctumBearerAuth:
+      type: http
+      scheme: bearer
+      description: Laravel Sanctum web token returned by auth endpoints.
     ServerBearerAuth:
       type: http
       scheme: bearer
@@ -170,6 +207,118 @@ components:
           type: string
           description: Short service health status.
           example: ok
+    AdvertiserDashboardResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: object
+          required: [account, period, metrics, spend_chart, running_campaigns, generated_at]
+          properties:
+            account:
+              type: object
+              required: [id, name, status, currency]
+              properties:
+                id:
+                  type: integer
+                  format: int64
+                name:
+                  type: string
+                  example: RealmCraft
+                status:
+                  type: string
+                  example: active
+                currency:
+                  type: string
+                  example: USD
+            period:
+              type: object
+              required: [today_start, month_start, month_end]
+              properties:
+                today_start:
+                  type: string
+                  format: date-time
+                month_start:
+                  type: string
+                  format: date-time
+                month_end:
+                  type: string
+                  format: date-time
+            metrics:
+              type: object
+              required:
+                - available_balance_micros
+                - active_campaigns
+                - active_creatives
+                - pending_creatives
+                - spend_today_micros
+                - spend_month_micros
+                - impressions_today
+                - impressions_month
+                - effective_cpm_micros
+              properties:
+                available_balance_micros:
+                  type: integer
+                  format: int64
+                active_campaigns:
+                  type: integer
+                active_creatives:
+                  type: integer
+                pending_creatives:
+                  type: integer
+                spend_today_micros:
+                  type: integer
+                  format: int64
+                spend_month_micros:
+                  type: integer
+                  format: int64
+                impressions_today:
+                  type: integer
+                impressions_month:
+                  type: integer
+                effective_cpm_micros:
+                  type: integer
+                  format: int64
+            spend_chart:
+              type: array
+              items:
+                type: object
+                required: [date, label, spend_micros]
+                properties:
+                  date:
+                    type: string
+                    format: date
+                  label:
+                    type: string
+                    example: Oct 14
+                  spend_micros:
+                    type: integer
+                    format: int64
+            running_campaigns:
+              type: array
+              items:
+                type: object
+                required: [id, name, status, daily_budget_micros, spend_micros, impressions]
+                properties:
+                  id:
+                    type: integer
+                    format: int64
+                  name:
+                    type: string
+                  status:
+                    type: string
+                  daily_budget_micros:
+                    type: integer
+                    format: int64
+                    nullable: true
+                  spend_micros:
+                    type: integer
+                    format: int64
+                  impressions:
+                    type: integer
+            generated_at:
+              type: string
+              format: date-time
     ErrorResponse:
       type: object
       required: [message]

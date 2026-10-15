@@ -354,7 +354,7 @@ class PluginApiController extends Controller
                 $query->whereNull('ends_at')->orWhere('ends_at', '>=', now());
             })
             ->whereHas('creatives', function ($query) use ($language) {
-                $query->where('status', 'approved')
+                $query->where('status', 'approved')->where('is_paused', false)
                     ->where(function ($query) use ($language) {
                         $query->whereNull('language');
 
@@ -411,6 +411,7 @@ class PluginApiController extends Controller
     {
         return $campaign->creatives()
             ->where('status', 'approved')
+            ->where('is_paused', false)
             ->where(function ($query) use ($language) {
                 $query->whereNull('language');
 

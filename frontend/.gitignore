@@ -1,0 +1,8 @@
+/.next/
+/.next-build/
+/node_modules/
+/out/
+
+# Generated TypeScript and Next.js files.
+*.tsbuildinfo
+/next-env.d.ts

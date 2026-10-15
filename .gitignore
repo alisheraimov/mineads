@@ -1,0 +1,13 @@
+# Local environment files; keep shareable examples.
+.env
+.env.*
+!.env.example
+
+# Local IDE settings and operating system files.
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Runtime logs.
+*.log

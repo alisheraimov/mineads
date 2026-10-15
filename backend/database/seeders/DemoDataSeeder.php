@@ -35,6 +35,8 @@ class DemoDataSeeder extends Seeder
             ['name' => 'MineAds Admin', 'password' => 'password', 'role' => 'admin'],
         );
 
+        $admin->assignRole('admin-owner');
+
         $advertisers = collect([
             ['name' => 'BlockBoost', 'email' => 'advertiser1@mineads.test'],
             ['name' => 'CraftList', 'email' => 'advertiser2@mineads.test'],
