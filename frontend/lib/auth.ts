@@ -17,6 +17,7 @@ export type User = {
   status: AccountStatus;
   avatar_url: string | null;
   email_verified_at: string | null;
+  google_connected: boolean;
   permissions: string[];
   advertiser_account?: CommercialAccount | null;
   publisher_account?: CommercialAccount | null;
@@ -82,6 +83,26 @@ export async function getCurrentUser() {
   });
 }
 
+export async function updateProfile(name: string) {
+  return apiRequest<{ data: User }>("/auth/profile", {
+    method: "PATCH",
+    token: getToken(),
+    body: JSON.stringify({ name }),
+  });
+}
+
+export async function updatePassword(payload: {
+  current_password: string;
+  password: string;
+  password_confirmation: string;
+}) {
+  return apiRequest<{ message: string }>("/auth/password", {
+    method: "PUT",
+    token: getToken(),
+    body: JSON.stringify(payload),
+  });
+}
+
 export async function logout() {
   const token = getToken();
 
@@ -134,6 +155,17 @@ type ApiOptions = RequestInit & {
   token?: string | null;
 };
 
+export class ApiError extends Error {
+  constructor(
+    message: string,
+    public status: number,
+    public errors: Record<string, string[]> = {},
+  ) {
+    super(message);
+    this.name = "ApiError";
+  }
+}
+
 export async function apiRequest<T>(path: string, options: ApiOptions = {}): Promise<T> {
   const headers = new Headers(options.headers);
   headers.set("Accept", "application/json");
@@ -154,7 +186,7 @@ export async function apiRequest<T>(path: string, options: ApiOptions = {}): Pro
   const payload = await response.json().catch(() => ({}));
 
   if (!response.ok) {
-    throw new Error(resolveApiMessage(payload, response.statusText));
+    throw new ApiError(resolveApiMessage(payload, response.statusText), response.status, payload.errors ?? {});
   }
 
   return payload as T;

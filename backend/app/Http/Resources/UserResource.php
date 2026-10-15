@@ -22,6 +22,7 @@ class UserResource extends JsonResource
             'status' => $this->status,
             'avatar_url' => $this->avatar_url,
             'email_verified_at' => $this->email_verified_at,
+            'google_connected' => $this->google_id !== null,
             'permissions' => $this->role === 'admin'
                 ? $this->getAllPermissions()->pluck('name')->values()
                 : [],

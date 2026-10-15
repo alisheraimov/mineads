@@ -118,7 +118,7 @@ export function AdvertiserDashboard() {
         <AdvertiserSidebar
           balance={dashboard.metrics.available_balance_micros}
         />
-        <main className="min-w-0 flex-1 bg-[#f8f9fa] px-5 py-8 sm:px-8 lg:px-10">
+        <main className="min-w-0 flex-1 bg-canvas px-5 py-8 sm:px-8 lg:px-10">
           <DashboardContent dashboard={dashboard} />
         </main>
       </div>

@@ -1,17 +1,32 @@
 import Image from "next/image";
 import Link from "next/link";
+import { ThemeSwitch } from "@/components/ui/theme-switch";
 
 export function AuthShell({ children }: { children: React.ReactNode }) {
   return (
     <main className="flex min-h-screen flex-col bg-background">
       <header className="flex h-[88px] items-center justify-between px-6 sm:px-8">
-        <Link href="/" className="inline-flex items-center gap-3" aria-label="MineAds home">
-          <Image src="/mineads_logo.svg" alt="" width={29} height={30} priority />
-          <span className="text-xl font-semibold leading-7">MineAds</span>
+        <Link
+          href="/"
+          className="inline-flex items-center gap-3"
+          aria-label="MineAds home"
+        >
+          <Image
+            src="/mineads_logo.svg"
+            alt=""
+            width={29}
+            height={30}
+            priority
+            className="dark:invert"
+          />
+          <span className="text-xl font-semibold leading-7 max-[379px]:hidden">MineAds</span>
         </Link>
-        <Link href="/" className="rounded-md px-2.5 py-2 text-sm font-medium">
-          Back to website
-        </Link>
+        <div className="flex items-center gap-2">
+          <ThemeSwitch />
+          <Link href="/" className="rounded-md px-2.5 py-2 text-sm font-medium">
+            Back to website
+          </Link>
+        </div>
       </header>
       <section className="flex min-h-[calc(100vh-184px)] flex-1 justify-center pt-[116px] px-6">
         {children}
@@ -40,9 +55,15 @@ export function AuthIntro({
 }) {
   return (
     <div className="flex w-full flex-col items-center gap-2 text-center">
-      {icon ? <div className="mb-1 flex size-12 items-center justify-center rounded-full bg-muted">{icon}</div> : null}
+      {icon ? (
+        <div className="mb-1 flex size-12 items-center justify-center rounded-full bg-muted">
+          {icon}
+        </div>
+      ) : null}
       <h1 className="w-full text-2xl font-semibold leading-8">{title}</h1>
-      <p className="w-full text-sm leading-5 text-muted-foreground">{description}</p>
+      <p className="w-full text-sm leading-5 text-muted-foreground">
+        {description}
+      </p>
       {children}
     </div>
   );
@@ -52,7 +73,9 @@ export function AuthDivider() {
   return (
     <div className="flex w-full items-center gap-4">
       <div className="h-px flex-1 bg-border" />
-      <span className="text-xs leading-4 text-muted-foreground">or continue with email</span>
+      <span className="text-xs leading-4 text-muted-foreground">
+        or continue with email
+      </span>
       <div className="h-px flex-1 bg-border" />
     </div>
   );
@@ -85,7 +108,11 @@ export function AuthError({ message }: { message: string }) {
     return null;
   }
 
-  return <p className="rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive">{message}</p>;
+  return (
+    <p className="rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive">
+      {message}
+    </p>
+  );
 }
 
 export function GoogleMark() {

@@ -4,19 +4,17 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import {
-  Bell,
   BookOpen,
-  ChevronDown,
   CircleHelp,
   CreditCard,
   LayoutDashboard,
   Loader2,
-  LogOut,
   Megaphone,
   Plus,
   Sparkles,
+  Settings,
 } from "lucide-react";
-import { BrandLogo } from "@/components/brand-logo";
+import { AccountHeader } from "@/components/account/account-header";
 import { Button } from "@/components/ui/button";
 import { startRouteProgress } from "@/components/ui/route-progress";
 import { User, getCurrentUser, logout, clearToken } from "@/lib/auth";
@@ -85,7 +83,7 @@ export function AdvertiserShell({ children }: { children: React.ReactNode }) {
       <AdvertiserHeader user={account.user} onLogout={handleLogout} />
       <div className="flex min-h-[calc(100vh-72px)]">
         <AdvertiserSidebar balance={account.balance} />
-        <main className="min-w-0 flex-1 bg-[#f8f9fa] px-5 py-8 sm:px-8 lg:px-10">
+        <main className="min-w-0 flex-1 bg-canvas px-5 py-8 sm:px-8 lg:px-10">
           <nav
             aria-label="Workspace"
             className="mb-6 flex flex-wrap gap-4 border-b pb-3 text-sm lg:hidden"
@@ -122,43 +120,7 @@ export function AdvertiserHeader({
   user: User;
   onLogout: () => void;
 }) {
-  return (
-    <header className="flex h-[72px] items-center justify-between border-b border-border bg-background px-6 lg:px-8">
-      <BrandLogo />
-      <div className="flex items-center gap-3 sm:gap-6">
-        <Button
-          asChild
-          variant="ghost"
-          size="sm"
-          className="hidden sm:inline-flex"
-        >
-          <Link href="#">Documentation</Link>
-        </Button>
-        <Button variant="ghost" size="icon-sm" aria-label="Notifications">
-          <Bell aria-hidden="true" />
-        </Button>
-        <div className="hidden items-center gap-2 sm:flex">
-          <Avatar name={user.name} />
-          <span className="max-w-32 truncate text-sm font-medium">
-            {user.name}
-          </span>
-          <ChevronDown
-            className="size-4 text-muted-foreground"
-            aria-hidden="true"
-          />
-        </div>
-        <Button
-          variant="outline"
-          size="sm"
-          aria-label="Log out"
-          onClick={onLogout}
-        >
-          <LogOut aria-hidden="true" />
-          <span className="hidden sm:inline">Log out</span>
-        </Button>
-      </div>
-    </header>
-  );
+  return <AccountHeader user={user} onLogout={onLogout} showNotifications />;
 }
 
 export function AdvertiserSidebar({ balance }: { balance: number }) {
@@ -220,6 +182,14 @@ export function AdvertiserSidebar({ balance }: { balance: number }) {
         </Button>
       </div>
 
+      <div className="mt-4">
+        <SidebarLink
+          label="Account settings"
+          href="/account"
+          icon={Settings}
+          active={pathname === "/account"}
+        />
+      </div>
     </aside>
   );
 }
@@ -247,21 +217,5 @@ function SidebarLink({
       <Icon className="size-4" aria-hidden={true} />
       <span className="truncate">{label}</span>
     </Link>
-  );
-}
-
-function Avatar({ name }: { name: string }) {
-  const initials = name
-    .split(" ")
-    .filter(Boolean)
-    .map((part) => part[0])
-    .join("")
-    .slice(0, 2)
-    .toUpperCase();
-
-  return (
-    <span className="grid size-8 place-items-center rounded-full bg-foreground text-xs font-semibold text-background">
-      {initials || "AD"}
-    </span>
   );
 }
