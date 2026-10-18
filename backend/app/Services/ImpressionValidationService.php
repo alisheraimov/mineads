@@ -107,15 +107,15 @@ class ImpressionValidationService
         }
 
         if ($raw->playerSession?->last_seen_at && $raw->playerSession->last_seen_at->lt($raw->received_at->copy()->subMinutes(15))) {
-            return $this->review('stale_player_session', 50);
+            return $this->invalid('stale_player_session', 50);
         }
 
         if ($this->deliveryImpressionCount($raw) > ($heartbeat->online_players + self::ONLINE_PLAYER_MARGIN)) {
-            return $this->review('impressions_exceed_recent_online_players', 70);
+            return $this->invalid('impressions_exceed_recent_online_players', 70);
         }
 
         if ($this->recentPlayerImpressionCount($raw) >= self::MAX_VALID_IMPRESSIONS_PER_PLAYER_PER_HOUR) {
-            return $this->review('player_frequency_cap_exceeded', 60);
+            return $this->invalid('player_frequency_cap_exceeded', 60);
         }
 
         if (! $delivery->campaign || ! $this->campaignBudget->canBill(
@@ -148,7 +148,17 @@ class ImpressionValidationService
     {
         return RawImpressionEvent::query()
             ->where('ad_delivery_id', $raw->ad_delivery_id)
-            ->whereIn('validation_status', ['pending', 'valid', 'review'])
+            ->where(function ($query) {
+                $query->whereIn('validation_status', ['pending', 'valid', 'review'])
+                    ->orWhere(function ($query) {
+                        $query->where('validation_status', 'invalid')
+                            ->whereIn('invalid_reason', [
+                                'stale_player_session',
+                                'impressions_exceed_recent_online_players',
+                                'player_frequency_cap_exceeded',
+                            ]);
+                    });
+            })
             ->count();
     }
 
@@ -217,22 +227,10 @@ class ImpressionValidationService
     /**
      * @return array{status: string, reason: string, risk_score: int}
      */
-    private function invalid(string $reason): array
+    private function invalid(string $reason, int $riskScore = 100): array
     {
         return [
             'status' => 'invalid',
-            'reason' => $reason,
-            'risk_score' => 100,
-        ];
-    }
-
-    /**
-     * @return array{status: string, reason: string, risk_score: int}
-     */
-    private function review(string $reason, int $riskScore): array
-    {
-        return [
-            'status' => 'review',
             'reason' => $reason,
             'risk_score' => $riskScore,
         ];

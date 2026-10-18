@@ -3,15 +3,18 @@
 namespace Tests\Feature;
 
 use App\Models\AdCreative;
+use App\Models\AdDelivery;
 use App\Models\AdvertiserAccount;
 use App\Models\AdvertiserLedgerEntry;
 use App\Models\Campaign;
 use App\Models\CampaignTarget;
+use App\Models\PlayerSession;
 use App\Models\PublisherAccount;
 use App\Models\RateTier;
 use App\Models\RateTierCountry;
 use App\Models\RawImpressionEvent;
 use App\Models\Server;
+use App\Models\ServerHeartbeat;
 use App\Models\User;
 use App\Services\ImpressionValidationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -397,6 +400,87 @@ class PluginApiTest extends TestCase
         $this->postJson('/api/plugin/v1/heartbeat')
             ->assertUnauthorized()
             ->assertJsonPath('message', 'Unauthenticated.');
+    }
+
+    public function test_stale_player_session_is_invalid_with_its_original_risk_score(): void
+    {
+        $raw = $this->pendingValidationEvent();
+        $session = PlayerSession::factory()->create([
+            'server_id' => $raw->server_id,
+            'player_hash' => $raw->player_hash,
+            'last_seen_at' => $raw->received_at->copy()->subMinutes(16),
+        ]);
+        $raw->update(['player_session_id' => $session->id]);
+
+        app(ImpressionValidationService::class)->validate($raw->id);
+
+        $this->assertInvalidUnbilledImpression($raw, 'stale_player_session', 50);
+    }
+
+    public function test_oversized_delivery_remains_invalid_as_each_event_is_processed(): void
+    {
+        $raw = $this->pendingValidationEvent();
+        RawImpressionEvent::factory()->count(3)->create([
+            'ad_delivery_id' => $raw->ad_delivery_id,
+            'server_id' => $raw->server_id,
+            'player_session_id' => null,
+            'displayed_at' => $raw->displayed_at,
+            'received_at' => $raw->received_at,
+        ]);
+
+        $this->validatePendingImpressions();
+
+        foreach (RawImpressionEvent::all() as $event) {
+            $this->assertInvalidUnbilledImpression($event, 'impressions_exceed_recent_online_players', 70);
+        }
+    }
+
+    public function test_player_frequency_cap_is_invalid_with_its_original_risk_score(): void
+    {
+        $raw = $this->pendingValidationEvent();
+        RawImpressionEvent::factory()->count(4)->create([
+            'player_hash' => $raw->player_hash,
+            'player_session_id' => null,
+            'displayed_at' => $raw->displayed_at->copy()->subMinutes(10),
+            'validation_status' => 'valid',
+        ]);
+
+        app(ImpressionValidationService::class)->validate($raw->id);
+
+        $this->assertInvalidUnbilledImpression($raw, 'player_frequency_cap_exceeded', 60);
+    }
+
+    private function pendingValidationEvent(): RawImpressionEvent
+    {
+        $this->freezeTime();
+        $delivery = AdDelivery::factory()->create(['requested_at' => now()]);
+        ServerHeartbeat::factory()->create([
+            'server_id' => $delivery->server_id,
+            'online_players' => 1,
+            'received_at' => now(),
+        ]);
+
+        return RawImpressionEvent::factory()->create([
+            'ad_delivery_id' => $delivery->id,
+            'server_id' => $delivery->server_id,
+            'player_session_id' => null,
+            'displayed_at' => now(),
+            'received_at' => now(),
+        ]);
+    }
+
+    private function assertInvalidUnbilledImpression(RawImpressionEvent $raw, string $reason, int $riskScore): void
+    {
+        $this->assertDatabaseHas('raw_impression_events', [
+            'id' => $raw->id,
+            'validation_status' => 'invalid',
+            'invalid_reason' => $reason,
+            'risk_score' => $riskScore,
+        ]);
+        $this->assertNotNull($raw->fresh()->validated_at);
+        $this->assertDatabaseCount('validated_impressions', 0);
+        $this->assertSame(0, AdvertiserLedgerEntry::query()->where('type', 'spend')->count());
+        $this->assertDatabaseCount('publisher_ledger_entries', 0);
     }
 
     private function activatedServer(bool $sendHeartbeat = false): array
