@@ -39,7 +39,7 @@ export function LoginForm() {
       } else if (!currentUser.data.advertiser_account && !currentUser.data.publisher_account) {
         router.push("/choose-path");
       } else {
-        router.push("/");
+        router.push(currentUser.data.role === "publisher" ? "/publisher" : "/");
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to log in.");

@@ -6,10 +6,19 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Server extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes;
+
+    protected $hidden = ['setup_token_hash'];
+
+    public function latestHeartbeat(): HasOne
+    {
+        return $this->hasOne(ServerHeartbeat::class)->latestOfMany('received_at');
+    }
 
     protected $guarded = [];
 

@@ -49,7 +49,11 @@ class PluginApiController extends Controller
 
         $plainToken = 'ma_srv_'.Str::random(48);
 
-        DB::transaction(function () use ($server, $plainToken): void {
+        DB::transaction(function () use ($server, $plainToken, $data): void {
+            $server = Server::query()->lockForUpdate()->find($server->id);
+            abort_unless($server && $server->status === 'pending' && $server->setup_token_hash
+                && (! $server->setup_token_expires_at || $server->setup_token_expires_at->isFuture())
+                && Hash::check($data['setup_token'], $server->setup_token_hash), 422, 'Invalid or expired setup token.');
             $server->update([
                 'status' => 'active',
                 'setup_token_hash' => null,
@@ -65,6 +69,8 @@ class PluginApiController extends Controller
                 'last_used_at' => now(),
             ]);
         });
+
+        $server->refresh();
 
         return response()->json([
             'server_id' => $server->id,

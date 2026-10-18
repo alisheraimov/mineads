@@ -7,6 +7,9 @@ use App\Http\Controllers\Advertiser\DashboardController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\GoogleAuthController;
 use App\Http\Controllers\PluginApiController;
+use App\Http\Controllers\Publisher\DashboardController as PublisherDashboardController;
+use App\Http\Controllers\Publisher\PayoutController as PublisherPayoutController;
+use App\Http\Controllers\Publisher\ServerController as PublisherServerController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/health', function () {
@@ -62,4 +65,18 @@ Route::prefix('advertiser')
         Route::get('/campaigns/{campaign}', [CampaignController::class, 'show'])->whereNumber('campaign');
         Route::put('/campaigns/{campaign}', [CampaignController::class, 'update'])->whereNumber('campaign');
         Route::patch('/campaigns/{campaign}/status', [CampaignController::class, 'status'])->whereNumber('campaign');
+    });
+
+Route::prefix('publisher')
+    ->middleware(['auth:sanctum', 'active', 'publisher'])
+    ->group(function () {
+        Route::get('/dashboard', [PublisherDashboardController::class, 'show']);
+        Route::get('/payouts', [PublisherPayoutController::class, 'show']);
+        Route::get('/servers', [PublisherServerController::class, 'index']);
+        Route::post('/servers', [PublisherServerController::class, 'store']);
+        Route::get('/servers/{server}', [PublisherServerController::class, 'show'])->whereNumber('server');
+        Route::get('/servers/{server}/performance', [PublisherServerController::class, 'performance'])->whereNumber('server');
+        Route::post('/servers/{server}/setup-token', [PublisherServerController::class, 'regenerate'])->whereNumber('server');
+        Route::patch('/servers/{server}/status', [PublisherServerController::class, 'status'])->whereNumber('server');
+        Route::delete('/servers/{server}', [PublisherServerController::class, 'destroy'])->whereNumber('server');
     });

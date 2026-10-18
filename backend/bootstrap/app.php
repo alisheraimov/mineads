@@ -1,5 +1,8 @@
 <?php
 
+use App\Http\Middleware\EnsureUserIsActive;
+use App\Http\Middleware\EnsureUserIsAdvertiser;
+use App\Http\Middleware\EnsureUserIsPublisher;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -14,8 +17,9 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
-            'active' => App\Http\Middleware\EnsureUserIsActive::class,
-            'advertiser' => App\Http\Middleware\EnsureUserIsAdvertiser::class,
+            'active' => EnsureUserIsActive::class,
+            'advertiser' => EnsureUserIsAdvertiser::class,
+            'publisher' => EnsureUserIsPublisher::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

@@ -77,8 +77,8 @@ export function AccountReadyPanel() {
           : "Start with your first campaign. You'll manage your creatives, budgets and campaign reports in your account."}
       </p>
       <PrimaryButton asChild className="h-10 w-full">
-        <Link href={isPublisher ? "/account" : "/account"}>
-          {isPublisher ? "Add your first server" : "Create your first campaign"}
+        <Link href={isPublisher ? "/publisher" : "/account"}>
+          {isPublisher ? "Go to publisher dashboard" : "Create your first campaign"}
         </Link>
       </PrimaryButton>
     </div>

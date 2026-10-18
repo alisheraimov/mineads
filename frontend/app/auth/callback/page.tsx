@@ -46,7 +46,7 @@ function AuthCallbackContent() {
         } else if (!data.advertiser_account && !data.publisher_account) {
           router.replace("/choose-path");
         } else {
-          router.replace("/");
+          router.replace(data.role === "publisher" ? "/publisher" : "/");
         }
       })
       .catch(() => {

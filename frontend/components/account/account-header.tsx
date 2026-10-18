@@ -112,6 +112,14 @@ export function AccountHeader({
                   </Link>
                 </Button>
               )}
+              {user.role === "publisher" && (
+                <Button asChild variant="ghost" className="h-9 justify-start">
+                  <Link href="/publisher">
+                    <LayoutDashboard aria-hidden="true" />
+                    Publisher account
+                  </Link>
+                </Button>
+              )}
               <Button asChild variant="ghost" className="h-9 justify-start">
                 <Link href="/account">
                   <Settings aria-hidden="true" />
