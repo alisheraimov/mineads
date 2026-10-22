@@ -144,7 +144,7 @@ class PluginApiController extends Controller
 
             $this->upsertPlayerSessions($server, $audience['players'] ?? [], $country, $language);
 
-            if ($eligiblePlayerCount < 1 || $server->status !== 'active') {
+            if ($eligiblePlayerCount < 1 || ! $this->adServingEnabled($server)) {
                 return $this->recordNoFill($server, $data['placement'], $audience, $country, $language);
             }
 
@@ -293,6 +293,7 @@ class PluginApiController extends Controller
         }
 
         $token = ServerApiToken::query()
+            ->with('server.publisherAccount.user')
             ->where('token_hash', hash('sha256', $plainToken))
             ->whereNull('revoked_at')
             ->first();
@@ -313,11 +314,13 @@ class PluginApiController extends Controller
 
     private function pluginConfig(Server $server): array
     {
+        $enabled = $this->adServingEnabled($server);
+
         return [
-            'enabled' => $server->status === 'active',
+            'enabled' => $enabled,
             'placements' => [
                 'chat' => [
-                    'enabled' => $server->status === 'active',
+                    'enabled' => $enabled,
                     'min_seconds_between_ads' => 300,
                     'max_ads_per_player_per_hour' => 4,
                     'min_online_players' => 1,
@@ -328,6 +331,15 @@ class PluginApiController extends Controller
                 'flush_seconds' => 30,
             ],
         ];
+    }
+
+    private function adServingEnabled(Server $server): bool
+    {
+        $publisher = $server->publisherAccount;
+
+        return $server->status === 'active'
+            && $publisher?->status === 'active'
+            && $publisher->user?->status === 'active';
     }
 
     private function upsertPlayerSessions(Server $server, array $players, ?string $country, ?string $language): void

@@ -77,6 +77,35 @@ services:
       redis:
         condition: service_started
 
+  backend-scheduler:
+    image: mineads-backend:latest
+    build:
+      context: ./backend
+    command: php artisan schedule:work
+    volumes:
+      - ./backend:/var/www/html
+      - backend_vendor:/var/www/html/vendor
+    environment:
+      APP_ENV: local
+      APP_DEBUG: "true"
+      APP_URL: http://localhost:8000
+      DB_CONNECTION: pgsql
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_DATABASE: mineads
+      DB_USERNAME: mineads
+      DB_PASSWORD: secret
+      CACHE_STORE: redis
+      QUEUE_CONNECTION: redis
+      REDIS_CLIENT: phpredis
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
   postgres:
     image: postgres:16.15-alpine3.24
     ports:

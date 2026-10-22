@@ -73,11 +73,11 @@ class PublisherPayoutsApiTest extends TestCase
             ->assertJsonPath('data.policy.minimum_payout_micros', 25000000)->assertJsonPath('data.policy.threshold_met', true);
     }
 
-    #[TestWith(['2026-10-01 00:00:00', '2026-10-04', '2026-10-05'])]
-    #[TestWith(['2026-10-05 23:59:59', '2026-10-04', '2026-10-05'])]
-    #[TestWith(['2026-10-06 00:00:00', '2026-11-04', '2026-11-05'])]
-    #[TestWith(['2026-12-31 23:59:59', '2027-01-04', '2027-01-05'])]
-    #[TestWith(['2028-02-29 23:59:59', '2028-03-04', '2028-03-05'])]
+    #[TestWith(['2026-10-01 00:00:00', '2026-10-05', '2026-10-05'])]
+    #[TestWith(['2026-10-05 23:59:59', '2026-10-05', '2026-10-05'])]
+    #[TestWith(['2026-10-06 00:00:00', '2026-11-05', '2026-11-05'])]
+    #[TestWith(['2026-12-31 23:59:59', '2027-01-05', '2027-01-05'])]
+    #[TestWith(['2028-02-29 23:59:59', '2028-03-05', '2028-03-05'])]
     public function test_estimated_windows_apply_the_month_end_hold_in_utc(string $now, string $start, string $end): void
     {
         $this->travelTo(CarbonImmutable::parse($now, 'UTC'));

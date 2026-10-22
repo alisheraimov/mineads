@@ -10,4 +10,11 @@ class PublisherLedgerEntry extends Model
     use HasFactory;
 
     protected $guarded = [];
+
+    protected function casts(): array
+    {
+        return [
+            'settled_at' => 'datetime',
+        ];
+    }
 }

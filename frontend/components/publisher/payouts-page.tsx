@@ -21,6 +21,7 @@ function dateLabel(value: string) {
   return new Date(value.length === 10 ? `${value}T00:00:00Z` : value).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" });
 }
 function windowLabel(start: string, end: string) {
+  if (start === end) return dateLabel(start);
   const first = new Date(`${start}T00:00:00Z`);
   const last = new Date(`${end}T00:00:00Z`);
   if (start.slice(0, 7) !== end.slice(0, 7)) return `${dateLabel(start)}–${dateLabel(end)}`;
@@ -64,7 +65,7 @@ export function PayoutsPage() {
         <SummaryMetric label="Lifetime paid" value={money(data.metrics.lifetime_paid_micros, data.account.currency)} caption="All completed payouts" />
       </section>
       <p className="text-xs leading-5 text-muted-foreground">
-        Minimum payout: {money(data.policy.minimum_payout_micros, data.account.currency)}. Payouts are arranged after a {data.policy.hold_days_min}–{data.policy.hold_days_max} day hold following month-end. {data.policy.threshold_met ? "Your eligible balance meets the minimum." : "Your eligible balance is below the minimum."} Processing windows are estimates and depend on finalized earnings and payout eligibility. All dates are in UTC.
+        Minimum payout: {money(data.policy.minimum_payout_micros, data.account.currency)}. Payouts are arranged after a {data.policy.hold_days_min === data.policy.hold_days_max ? data.policy.hold_days_max : `${data.policy.hold_days_min}–${data.policy.hold_days_max}`} day hold following month-end. {data.policy.threshold_met ? "Your eligible balance meets the minimum." : "Your eligible balance is below the minimum."} Processing windows are estimates and depend on finalized earnings and payout eligibility. All dates are in UTC.
       </p>
       <section className={panelClass} aria-labelledby="payout-method-title">
         <h2 id="payout-method-title" className="font-semibold">Payout method</h2>

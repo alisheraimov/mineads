@@ -19,6 +19,7 @@ use App\Models\User;
 use App\Services\ImpressionValidationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 class PluginApiTest extends TestCase
@@ -267,6 +268,78 @@ class PluginApiTest extends TestCase
         $this->assertDatabaseCount('validated_impressions', 0);
         $this->assertSame(0, AdvertiserLedgerEntry::query()->where('type', 'spend')->count());
         $this->assertDatabaseCount('publisher_ledger_entries', 0);
+    }
+
+    #[DataProvider('disabledPublisherStatuses')]
+    public function test_suspension_stops_ads_and_disables_plugin_until_restored(string $publisherStatus, string $userStatus, string $serverStatus): void
+    {
+        [$apiToken, $server] = $this->activatedServer();
+        $publisher = $server->publisherAccount;
+        $advertiser = AdvertiserAccount::factory()->create();
+        $campaign = $this->targetedCampaign($advertiser);
+        $this->approvedCreative($campaign);
+        $this->usRateTier();
+        AdvertiserLedgerEntry::factory()->create([
+            'advertiser_account_id' => $advertiser->id,
+            'campaign_id' => null,
+            'type' => 'deposit',
+            'amount_micros' => 10000000,
+        ]);
+        $headers = ['Authorization' => 'Bearer '.$apiToken];
+        $payload = [
+            'placement' => 'chat',
+            'audiences' => [[
+                'audience_id' => 'aud_us_en',
+                'country' => 'US',
+                'language' => 'en',
+                'eligible_player_count' => 1,
+            ]],
+        ];
+
+        $this->postJson('/api/plugin/v1/ads/request', $payload, $headers)
+            ->assertOk()->assertJsonPath('decisions.0.decision', 'serve');
+
+        $publisher->update(['status' => $publisherStatus]);
+        $publisher->user->update(['status' => $userStatus]);
+        $server->update(['status' => $serverStatus]);
+
+        $this->postJson('/api/plugin/v1/ads/request', $payload, $headers)
+            ->assertOk()
+            ->assertJsonPath('decisions.0.decision', 'no_fill')
+            ->assertJsonMissingPath('decisions.0.tracking');
+        $this->assertDatabaseHas('ad_deliveries', [
+            'server_id' => $server->id,
+            'decision' => 'no_fill',
+            'campaign_id' => null,
+        ]);
+        $this->assertSame(1, AdDelivery::query()->where('decision', 'served')->count());
+
+        $this->postJson('/api/plugin/v1/heartbeat', ['online_players' => 5], $headers)
+            ->assertOk()
+            ->assertJsonPath('config.enabled', false)
+            ->assertJsonPath('config.placements.chat.enabled', false);
+        $this->assertDatabaseHas('server_heartbeats', ['server_id' => $server->id, 'online_players' => 5]);
+
+        $publisher->update(['status' => 'active']);
+        $publisher->user->update(['status' => 'active']);
+        $server->update(['status' => 'active']);
+
+        $this->postJson('/api/plugin/v1/heartbeat', [], $headers)
+            ->assertOk()
+            ->assertJsonPath('config.enabled', true)
+            ->assertJsonPath('config.placements.chat.enabled', true);
+        $this->postJson('/api/plugin/v1/ads/request', $payload, $headers)
+            ->assertOk()->assertJsonPath('decisions.0.decision', 'serve');
+        $this->assertSame(2, AdDelivery::query()->where('decision', 'served')->count());
+    }
+
+    public static function disabledPublisherStatuses(): array
+    {
+        return [
+            'suspended publisher account' => ['suspended', 'active', 'active'],
+            'suspended publisher user' => ['active', 'suspended', 'active'],
+            'inactive server' => ['active', 'active', 'inactive'],
+        ];
     }
 
     public function test_ad_request_returns_no_fill_when_advertiser_has_no_balance(): void
