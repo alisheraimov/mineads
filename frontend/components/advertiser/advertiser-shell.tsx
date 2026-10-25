@@ -12,6 +12,9 @@ import {
   Megaphone,
   Plus,
   Sparkles,
+  Users,
+  Server,
+  Wallet,
   Settings,
 } from "lucide-react";
 import { AccountHeader } from "@/components/account/account-header";
@@ -123,31 +126,50 @@ export function AdvertiserHeader({
   return <AccountHeader user={user} onLogout={onLogout} showNotifications />;
 }
 
-export function AdvertiserSidebar({ balance }: { balance: number }) {
+export function AdvertiserSidebar({ balance, workspace = "advertiser", onComingSoon }: {
+  balance: number;
+  workspace?: "advertiser" | "admin";
+  onComingSoon?: (section: string) => void;
+}) {
   const pathname = usePathname();
+  const isAdmin = workspace === "admin";
   return (
     <aside className="hidden w-[248px] shrink-0 flex-col border-r border-sidebar-border bg-sidebar px-3 py-4 lg:flex">
       <div className="rounded-lg p-2">
         <p className="text-sm font-medium text-sidebar-foreground">
-          Advertiser
+          {isAdmin ? "Admin Console" : "Advertiser"}
         </p>
         <p className="mt-1 text-xs text-muted-foreground">
-          Advertising workspace
+          {isAdmin ? "Marketplace operations" : "Advertising workspace"}
         </p>
       </div>
 
-      <Button asChild className="mt-4 w-full">
+      {!isAdmin && <Button asChild className="mt-4 w-full">
         <Link href="/advertiser/campaigns/new">
           <Plus aria-hidden="true" />
           Create campaign
         </Link>
-      </Button>
+      </Button>}
 
       <nav className="mt-6 space-y-1">
         <p className="px-2 py-2 text-xs font-medium text-sidebar-foreground/70">
           Workspace
         </p>
-        {navItems.map((item) => (
+        {isAdmin ? <>
+          <SidebarLink label="Overview" href="/admin" icon={LayoutDashboard} active={pathname === "/admin"} />
+          {[
+            { label: "Users & accounts", icon: Users },
+            { label: "Campaigns", icon: Megaphone },
+            { label: "Creatives", icon: Sparkles },
+            { label: "Publishers & servers", icon: Server },
+            { label: "Finance", icon: Wallet },
+          ].map(({ label, icon: Icon }) => (
+            <Button key={label} variant="ghost" className="h-9 w-full justify-start px-2 font-normal" onClick={() => onComingSoon?.(label)} aria-label={label + " (coming soon)"}>
+              <Icon aria-hidden="true" />{label}
+            </Button>
+          ))}
+          <p className="px-2 pt-3 text-xs text-muted-foreground">More sections coming soon</p>
+        </> : navItems.map((item) => (
           <SidebarLink
             key={item.label}
             {...item}
@@ -161,7 +183,7 @@ export function AdvertiserSidebar({ balance }: { balance: number }) {
         ))}
       </nav>
 
-      <div className="my-4 border-t border-sidebar-border" />
+      {!isAdmin && <><div className="my-4 border-t border-sidebar-border" />
 
       <nav className="space-y-1">
         <p className="px-2 py-2 text-xs font-medium text-sidebar-foreground/70">
@@ -170,17 +192,20 @@ export function AdvertiserSidebar({ balance }: { balance: number }) {
         {resourceItems.map((item) => (
           <SidebarLink key={item.label} {...item} />
         ))}
-      </nav>
+      </nav></>}
 
       <div className="min-h-8 flex-1" />
 
-      <div className="rounded-lg border border-border bg-background p-3">
+      {isAdmin ? <div className="space-y-1 rounded-lg border border-border bg-background p-3">
+        <p className="text-xs font-medium">Admin access</p>
+        <p className="text-xs text-muted-foreground">All marketplace data</p>
+      </div> : <div className="rounded-lg border border-border bg-background p-3">
         <p className="text-xs text-muted-foreground">Available balance</p>
         <p className="mt-3 text-xl font-semibold">{formatMicros(balance)}</p>
         <Button asChild variant="outline" className="mt-3 w-full">
           <Link href="/advertiser/billing#funding">Add funds</Link>
         </Button>
-      </div>
+      </div>}
 
       <div className="mt-4">
         <SidebarLink

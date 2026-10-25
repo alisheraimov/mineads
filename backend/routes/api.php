@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Advertiser\BillingController;
 use App\Http\Controllers\Advertiser\CampaignController;
 use App\Http\Controllers\Advertiser\CreativeController;
@@ -11,6 +12,11 @@ use App\Http\Controllers\Publisher\DashboardController as PublisherDashboardCont
 use App\Http\Controllers\Publisher\PayoutController as PublisherPayoutController;
 use App\Http\Controllers\Publisher\ServerController as PublisherServerController;
 use Illuminate\Support\Facades\Route;
+
+Route::prefix('admin')->middleware(['auth:sanctum', 'active', 'admin', 'verified'])->group(function () {
+    Route::get('/dashboard', [AdminDashboardController::class, 'show']);
+    Route::get('/dashboard/performance', [AdminDashboardController::class, 'performance']);
+});
 
 Route::get('/health', function () {
     return response()->json([

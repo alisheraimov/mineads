@@ -130,6 +130,7 @@ class ServerController extends Controller
         $data = $request->validate(['name' => ['required', 'string']]);
         DB::transaction(function () use ($request, $server, $data): void {
             $model = $this->ownedServer($request, $server, true);
+            abort_if($model->status === 'suspended', 403, 'Suspended servers cannot be removed.');
             abort_unless(hash_equals($model->name, $data['name']), 422, 'Enter the server name exactly to remove it.');
             $model->apiTokens()->whereNull('revoked_at')->update(['revoked_at' => now()]);
             $model->update(['status' => 'inactive', 'setup_token_hash' => null, 'setup_token_expires_at' => null]);

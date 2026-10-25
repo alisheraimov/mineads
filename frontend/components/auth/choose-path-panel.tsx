@@ -39,6 +39,9 @@ export function ChoosePathPanel() {
         if (!data.email_verified_at) {
           startRouteProgress();
           router.replace(`/verify-email?email=${encodeURIComponent(data.email)}`);
+        } else if (data.role === "admin") {
+          startRouteProgress();
+          router.replace("/admin");
         } else if (data.advertiser_account) {
           startRouteProgress();
           router.replace("/account-ready?role=advertiser");

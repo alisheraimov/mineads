@@ -43,6 +43,8 @@ function AuthCallbackContent() {
           router.replace("/account-suspended");
         } else if (!data.email_verified_at) {
           router.replace(`/verify-email?email=${encodeURIComponent(data.email)}`);
+        } else if (data.role === "admin") {
+          router.replace("/admin");
         } else if (!data.advertiser_account && !data.publisher_account) {
           router.replace("/choose-path");
         } else {

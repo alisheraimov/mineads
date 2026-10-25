@@ -36,6 +36,8 @@ export function LoginForm() {
         router.push("/account-suspended");
       } else if (!currentUser.data.email_verified_at) {
         router.push(`/verify-email?email=${encodeURIComponent(currentUser.data.email)}`);
+      } else if (currentUser.data.role === "admin") {
+        router.push("/admin");
       } else if (!currentUser.data.advertiser_account && !currentUser.data.publisher_account) {
         router.push("/choose-path");
       } else {

@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\Payout;
 use App\Models\PublisherAccount;
 use App\Models\PublisherLedgerEntry;
+use App\Models\Server;
 use App\Services\PublisherBalanceService;
 use App\Services\PublisherPayoutService;
 use Carbon\CarbonImmutable;
@@ -188,6 +189,89 @@ class PublisherPayoutPreparationTest extends TestCase
         $this->assertDatabaseHas('publisher_ledger_entries', ['id' => $foreignEarning->id, 'type' => 'pending_earning', 'settled_at' => null]);
         $this->assertDatabaseCount('payouts', 1);
         $this->assertDatabaseHas('payouts', ['publisher_account_id' => $publisher->id, 'currency' => 'EUR', 'amount_micros' => 55000000]);
+    }
+
+    public function test_suspended_server_earnings_remain_pending_while_other_earnings_settle_and_payout_is_held(): void
+    {
+        $publisher = PublisherAccount::factory()->create();
+        $suspended = Server::factory()->create(['publisher_account_id' => $publisher->id, 'status' => 'suspended']);
+        $active = Server::factory()->create(['publisher_account_id' => $publisher->id]);
+        $held = $this->earning($publisher, 90000000, '2026-09-01 00:00:00', ['server_id' => $suspended->id]);
+        $eligible = $this->earning($publisher, 60000000, '2026-09-01 00:00:00', ['server_id' => $active->id]);
+        $accountEarning = $this->earning($publisher, 10000000, '2026-09-01 00:00:00');
+
+        $this->artisan('publishers:prepare-payouts')
+            ->expectsOutput('Settled 2 ledger entries; created 0 pending payouts.')->assertSuccessful();
+
+        $this->assertDatabaseHas('publisher_ledger_entries', ['id' => $held->id, 'type' => 'pending_earning', 'settled_at' => null]);
+        $this->assertDatabaseHas('publisher_ledger_entries', ['id' => $eligible->id, 'type' => 'payable', 'settled_at' => '2026-10-05 00:10:00']);
+        $this->assertDatabaseHas('publisher_ledger_entries', ['id' => $accountEarning->id, 'type' => 'payable']);
+        $this->assertDatabaseCount('payouts', 0);
+    }
+
+    public function test_suspension_holds_previously_settled_earnings_even_without_earnings_on_that_server(): void
+    {
+        $publisher = PublisherAccount::factory()->create();
+        Server::factory()->create(['publisher_account_id' => $publisher->id, 'status' => 'suspended']);
+        $this->earning($publisher, 60000000, '2026-09-01 00:00:00', ['type' => 'payable']);
+        $existing = Payout::factory()->create(['publisher_account_id' => $publisher->id, 'amount_micros' => 1000000]);
+
+        $this->artisan('publishers:prepare-payouts')->assertSuccessful();
+
+        $this->assertDatabaseCount('payouts', 1);
+        $this->assertDatabaseHas('payouts', ['id' => $existing->id, 'status' => 'pending', 'amount_micros' => 1000000]);
+    }
+
+    public function test_clearing_the_last_suspension_releases_earnings_and_payout_on_the_next_run(): void
+    {
+        $publisher = PublisherAccount::factory()->create();
+        $first = Server::factory()->create(['publisher_account_id' => $publisher->id, 'status' => 'suspended']);
+        $second = Server::factory()->create(['publisher_account_id' => $publisher->id, 'status' => 'suspended']);
+        $earning = $this->earning($publisher, 60000000, '2026-09-01 00:00:00', ['server_id' => $second->id]);
+        $this->artisan('publishers:prepare-payouts')->assertSuccessful();
+        $first->update(['status' => 'active']);
+
+        $this->artisan('publishers:prepare-payouts')->assertSuccessful();
+
+        $this->assertDatabaseCount('payouts', 0);
+        $this->assertDatabaseHas('publisher_ledger_entries', ['id' => $earning->id, 'type' => 'pending_earning', 'settled_at' => null]);
+
+        $second->update(['status' => 'active']);
+        $this->travelTo(CarbonImmutable::parse('2026-10-06 00:10:00', 'UTC'));
+        $this->artisan('publishers:prepare-payouts')->assertSuccessful();
+
+        $this->assertDatabaseHas('publisher_ledger_entries', ['id' => $earning->id, 'type' => 'payable', 'settled_at' => '2026-10-06 00:10:00']);
+        $this->assertDatabaseCount('payouts', 1);
+        $this->assertDatabaseHas('payouts', ['publisher_account_id' => $publisher->id, 'amount_micros' => 60000000, 'cycle_month' => '2026-10-01']);
+    }
+
+    #[TestWith(['inactive'])]
+    #[TestWith(['pending'])]
+    public function test_non_suspended_servers_and_other_publishers_suspensions_do_not_block_payouts(string $status): void
+    {
+        $publisher = PublisherAccount::factory()->create();
+        $server = Server::factory()->create(['publisher_account_id' => $publisher->id, 'status' => $status]);
+        Server::factory()->create(['status' => 'suspended']);
+        $this->earning($publisher, 60000000, '2026-09-01 00:00:00', ['server_id' => $server->id]);
+
+        $this->artisan('publishers:prepare-payouts')->assertSuccessful();
+
+        $this->assertDatabaseCount('payouts', 1);
+        $this->assertDatabaseHas('payouts', ['publisher_account_id' => $publisher->id, 'amount_micros' => 60000000]);
+    }
+
+    public function test_soft_deleted_suspended_servers_still_hold_settlement_and_payouts(): void
+    {
+        $publisher = PublisherAccount::factory()->create();
+        $server = Server::factory()->create(['publisher_account_id' => $publisher->id, 'status' => 'suspended']);
+        $server->delete();
+        $held = $this->earning($publisher, 90000000, '2026-09-01 00:00:00', ['server_id' => $server->id]);
+        $this->earning($publisher, 60000000, '2026-08-01 00:00:00', ['type' => 'payable']);
+
+        $this->artisan('publishers:prepare-payouts')->assertSuccessful();
+
+        $this->assertDatabaseHas('publisher_ledger_entries', ['id' => $held->id, 'type' => 'pending_earning', 'settled_at' => null]);
+        $this->assertDatabaseCount('payouts', 0);
     }
 
     #[TestWith([25000000, 25000000, 1])]

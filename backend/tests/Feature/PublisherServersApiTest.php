@@ -172,6 +172,17 @@ class PublisherServersApiTest extends TestCase
         $this->withHeader('Authorization', 'Bearer removed-plugin')->postJson('/api/plugin/v1/heartbeat')->assertUnauthorized();
     }
 
+    public function test_suspended_server_cannot_be_removed_to_bypass_the_payout_hold(): void
+    {
+        $publisher = PublisherAccount::factory()->create();
+        $server = Server::factory()->create(['publisher_account_id' => $publisher->id, 'status' => 'suspended']);
+
+        $this->actingAs($publisher->user)->deleteJson('/api/publisher/servers/'.$server->id, ['name' => $server->name])
+            ->assertForbidden()->assertJsonPath('message', 'Suspended servers cannot be removed.');
+
+        $this->assertDatabaseHas('servers', ['id' => $server->id, 'status' => 'suspended', 'deleted_at' => null]);
+    }
+
     #[TestWith(['GET', ''])]
     #[TestWith(['GET', '/performance?from=2026-10-01&to=2026-10-15&group=day'])]
     #[TestWith(['POST', '/setup-token'])]

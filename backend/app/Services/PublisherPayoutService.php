@@ -5,7 +5,9 @@ namespace App\Services;
 use App\Models\Payout;
 use App\Models\PublisherAccount;
 use App\Models\PublisherLedgerEntry;
+use App\Models\Server;
 use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -52,14 +54,26 @@ class PublisherPayoutService
                 return ['settled_entries' => 0, 'created_payouts' => 0];
             }
 
+            $suspendedServerIds = Server::withTrashed()
+                ->where('publisher_account_id', $publisher->id)
+                ->orderBy('id')->lockForUpdate()->get(['id', 'status'])
+                ->where('status', 'suspended')->modelKeys();
+
             $settled = PublisherLedgerEntry::query()
                 ->where('publisher_account_id', $publisher->id)
                 ->where('currency', $publisher->currency)
                 ->where('type', 'pending_earning')
                 ->where('created_at', '<', $cycleMonth)
+                ->where(function (Builder $query) use ($suspendedServerIds): void {
+                    $query->whereNull('server_id')->orWhereNotIn('server_id', $suspendedServerIds);
+                })
                 ->update(['type' => 'payable', 'settled_at' => $now]);
 
             $result = ['settled_entries' => $settled, 'created_payouts' => 0];
+
+            if ($suspendedServerIds !== []) {
+                return $result;
+            }
 
             if (Payout::query()->where('publisher_account_id', $publisher->id)
                 ->where('currency', $publisher->currency)
