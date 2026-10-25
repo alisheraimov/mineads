@@ -4,7 +4,7 @@ import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 import { startRouteProgress } from "@/components/ui/route-progress";
-import { getCurrentUser, setToken } from "@/lib/auth";
+import { adminHome, getCurrentUser, setToken } from "@/lib/auth";
 
 export default function AuthCallbackPage() {
   return (
@@ -44,7 +44,7 @@ function AuthCallbackContent() {
         } else if (!data.email_verified_at) {
           router.replace(`/verify-email?email=${encodeURIComponent(data.email)}`);
         } else if (data.role === "admin") {
-          router.replace("/admin");
+          router.replace(adminHome(data));
         } else if (!data.advertiser_account && !data.publisher_account) {
           router.replace("/choose-path");
         } else {

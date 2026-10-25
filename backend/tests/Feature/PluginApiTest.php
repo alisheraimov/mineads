@@ -371,6 +371,36 @@ class PluginApiTest extends TestCase
         ]);
     }
 
+    public static function restrictedDeliveryUsers(): array
+    {
+        return [['advertiser', 'suspended'], ['advertiser', 'deleted'], ['publisher', 'deleted']];
+    }
+
+    #[DataProvider('restrictedDeliveryUsers')]
+    public function test_user_restrictions_stop_ad_delivery_without_changing_campaign_settings(string $role, string $status): void
+    {
+        [$token, $server] = $this->activatedServer();
+        $advertiser = AdvertiserAccount::factory()->create(['user_id' => User::factory()->create(['role' => 'advertiser'])->id]);
+        $campaign = $this->targetedCampaign($advertiser);
+        $this->approvedCreative($campaign);
+        $this->usRateTier();
+        AdvertiserLedgerEntry::factory()->create(['advertiser_account_id' => $advertiser->id, 'campaign_id' => null, 'type' => 'deposit', 'amount_micros' => 10000000]);
+        $payload = ['placement' => 'chat', 'audiences' => [['audience_id' => 'aud', 'country' => 'US', 'language' => 'en', 'eligible_player_count' => 1]]];
+        $headers = ['Authorization' => 'Bearer '.$token];
+        $this->postJson('/api/plugin/v1/ads/request', $payload, $headers)->assertOk()->assertJsonPath('decisions.0.decision', 'serve');
+        $user = $role === 'advertiser' ? $advertiser->user : $server->publisherAccount->user;
+        if ($status === 'deleted') {
+            $user->delete();
+        } else {
+            $user->update(['status' => 'suspended']);
+        }
+
+        $this->postJson('/api/plugin/v1/ads/request', $payload, $headers)->assertOk()->assertJsonPath('decisions.0.decision', 'no_fill');
+
+        $this->assertDatabaseHas('campaigns', ['id' => $campaign->id, 'status' => 'active']);
+        $this->assertDatabaseHas('servers', ['id' => $server->id, 'status' => 'active']);
+    }
+
     public function test_ad_request_returns_no_fill_when_daily_budget_is_too_low(): void
     {
         [$apiToken] = $this->activatedServer();

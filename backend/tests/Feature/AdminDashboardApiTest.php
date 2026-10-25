@@ -12,6 +12,7 @@ use App\Models\ServerHeartbeat;
 use App\Models\User;
 use App\Models\ValidatedImpression;
 use Carbon\CarbonImmutable;
+use Database\Seeders\AdminPermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
@@ -29,6 +30,29 @@ class AdminDashboardApiTest extends TestCase
     public static function protectedEndpoints(): array
     {
         return [['/api/admin/dashboard'], ['/api/admin/dashboard/performance']];
+    }
+
+    public function test_ad_operations_receives_impressions_without_financial_data(): void
+    {
+        $this->seed(AdminPermissionSeeder::class);
+        $admin = User::factory()->create(['role' => 'admin']);
+        $admin->assignRole('ad-ops');
+
+        $this->actingAs($admin, 'sanctum')->getJson('/api/admin/dashboard')
+            ->assertOk()->assertJsonMissingPath('data.pending_payouts')->assertJsonMissingPath('data.pending_payout_amounts');
+        $this->getJson('/api/admin/dashboard/performance')
+            ->assertOk()->assertJsonPath('data.metrics.validated_impressions', 0)
+            ->assertJsonMissingPath('data.metrics.spend_micros')->assertJsonMissingPath('data.chart.0.earnings_micros');
+    }
+
+    public function test_support_cannot_access_marketplace_analytics(): void
+    {
+        $this->seed(AdminPermissionSeeder::class);
+        $admin = User::factory()->create(['role' => 'admin']);
+        $admin->assignRole('support');
+
+        $this->actingAs($admin, 'sanctum')->getJson('/api/admin/dashboard')->assertForbidden();
+        $this->getJson('/api/admin/dashboard/performance')->assertForbidden();
     }
 
     #[DataProvider('protectedEndpoints')]
@@ -74,7 +98,9 @@ class AdminDashboardApiTest extends TestCase
 
     public function test_snapshot_counts_current_records_and_deduplicates_unhealthy_servers(): void
     {
+        $this->seed(AdminPermissionSeeder::class);
         $admin = User::factory()->create(['role' => 'admin']);
+        $admin->assignRole('admin-owner');
         $campaign = Campaign::factory()->create(['status' => 'active']);
         Campaign::factory()->create(['status' => 'paused']);
         $creative = AdCreative::factory()->create(['campaign_id' => $campaign->id, 'status' => 'pending_review', 'created_at' => now()->subHours(3)]);
@@ -120,7 +146,9 @@ class AdminDashboardApiTest extends TestCase
     #[DataProvider('healthSamples')]
     public function test_invalid_rate_health_threshold_requires_sufficient_recent_processed_impressions(int $total, int $invalid, int $expected): void
     {
+        $this->seed(AdminPermissionSeeder::class);
         $admin = User::factory()->create(['role' => 'admin']);
+        $admin->assignRole('admin-owner');
         $server = Server::factory()->create();
         ServerHeartbeat::factory()->create(['server_id' => $server->id, 'received_at' => now()->subMinute()]);
         $delivery = AdDelivery::factory()->create(['server_id' => $server->id]);
@@ -139,7 +167,9 @@ class AdminDashboardApiTest extends TestCase
 
     public function test_performance_uses_validation_time_for_finance_and_received_time_for_reports(): void
     {
+        $this->seed(AdminPermissionSeeder::class);
         $admin = User::factory()->create(['role' => 'admin']);
+        $admin->assignRole('admin-owner');
         $raw = RawImpressionEvent::factory()->create([
             'received_at' => '2026-10-23 23:59:00', 'validation_status' => 'valid', 'validated_at' => '2026-10-24 00:00:00',
         ]);
@@ -174,7 +204,9 @@ class AdminDashboardApiTest extends TestCase
 
     public function test_custom_period_excludes_next_midnight_and_zero_fills_daily_buckets(): void
     {
+        $this->seed(AdminPermissionSeeder::class);
         $admin = User::factory()->create(['role' => 'admin']);
+        $admin->assignRole('admin-owner');
         ValidatedImpression::factory()->create(['validated_at' => '2026-10-22 23:59:59', 'billable_micros' => 3000]);
         ValidatedImpression::factory()->create(['validated_at' => '2026-10-23 00:00:00', 'billable_micros' => 9000]);
 
@@ -187,7 +219,9 @@ class AdminDashboardApiTest extends TestCase
 
     public function test_empty_marketplace_returns_real_zero_totals(): void
     {
+        $this->seed(AdminPermissionSeeder::class);
         $admin = User::factory()->create(['role' => 'admin']);
+        $admin->assignRole('admin-owner');
 
         $this->actingAs($admin, 'sanctum')->getJson('/api/admin/dashboard/performance?period=yesterday')
             ->assertOk()->assertJsonPath('data.metrics.spend_micros', 0)
@@ -209,7 +243,9 @@ class AdminDashboardApiTest extends TestCase
     #[DataProvider('invalidRanges')]
     public function test_invalid_date_ranges_return_validation_errors(string $query, string $field): void
     {
+        $this->seed(AdminPermissionSeeder::class);
         $admin = User::factory()->create(['role' => 'admin']);
+        $admin->assignRole('admin-owner');
 
         $this->actingAs($admin, 'sanctum')->getJson('/api/admin/dashboard/performance?'.$query)
             ->assertUnprocessable()->assertJsonValidationErrors($field);

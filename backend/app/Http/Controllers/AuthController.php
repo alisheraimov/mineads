@@ -208,6 +208,8 @@ class AuthController extends Controller
 
         $user = $request->user()->load(['advertiserAccount', 'publisherAccount']);
 
+        abort_if($user->role === 'admin', 403, 'Admin accounts cannot become commercial accounts.');
+
         if (! $user->hasVerifiedEmail()) {
             return response()->json([
                 'message' => 'Verify your email before choosing an account path.',

@@ -19,8 +19,9 @@ use Illuminate\Validation\ValidationException;
 
 class DashboardController extends Controller
 {
-    public function show(): JsonResponse
+    public function show(Request $request): JsonResponse
     {
+        abort_unless($request->user()->adminCan('admin.analytics.view'), 403, 'Your role cannot view analytics.');
         $now = CarbonImmutable::now('UTC');
         $active = Server::query()->where('status', 'active');
         $online = (clone $active)->whereHas('latestHeartbeat', fn (Builder $query) => $query
@@ -44,7 +45,7 @@ class DashboardController extends Controller
             ->selectRaw('currency, COUNT(*) as count, SUM(amount_micros) as amount_micros')
             ->groupBy('currency')->orderBy('currency')->get();
 
-        return response()->json(['data' => [
+        return response()->json(['data' => $this->visibleData($request, [
             'active_campaigns' => Campaign::query()->where('status', 'active')->count(),
             'active_servers' => (clone $active)->count(),
             'online_servers' => (clone $online)->count(),
@@ -64,11 +65,12 @@ class DashboardController extends Controller
                 'minimum_processed_impressions' => (int) config('admin.health_minimum_processed_impressions'),
             ],
             'generated_at' => $now->toISOString(),
-        ]]);
+        ])]);
     }
 
     public function performance(Request $request): JsonResponse
     {
+        abort_unless($request->user()->adminCan('admin.analytics.view'), 403, 'Your role cannot view analytics.');
         $input = $request->validate([
             'period' => ['sometimes', Rule::in(['today', 'yesterday', 'last7', 'last30', 'custom'])],
             'from' => ['required_if:period,custom', 'date_format:Y-m-d', 'before_or_equal:today'],
@@ -120,7 +122,7 @@ class DashboardController extends Controller
             ];
         }
 
-        return response()->json(['data' => [
+        return response()->json(['data' => $this->visibleData($request, [
             'period' => [
                 'key' => $period, 'from' => $start->toDateString(), 'to' => $end->subDay()->toDateString(),
                 'timezone' => 'UTC', 'interval' => $hourly ? 'hour' : 'day',
@@ -138,7 +140,24 @@ class DashboardController extends Controller
             'currency' => 'USD',
             'chart' => $chart,
             'generated_at' => $now->toISOString(),
-        ]]);
+        ])]);
+    }
+
+    private function visibleData(Request $request, array $data): array
+    {
+        if ($request->user()->adminCan('admin.finance.view')) {
+            return $data;
+        }
+        foreach (['spend_micros', 'earnings_micros', 'fee_micros', 'pending_payouts', 'pending_payout_amounts'] as $key) {
+            unset($data[$key]);
+        }
+        foreach ($data as $key => $value) {
+            if (is_array($value)) {
+                $data[$key] = $this->visibleData($request, $value);
+            }
+        }
+
+        return $data;
     }
 
     private function bucketExpression(bool $hourly): string

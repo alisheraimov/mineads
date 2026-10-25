@@ -19,6 +19,7 @@ export type User = {
   email_verified_at: string | null;
   google_connected: boolean;
   permissions: string[];
+  admin_role: string | null;
   advertiser_account?: CommercialAccount | null;
   publisher_account?: CommercialAccount | null;
 };
@@ -27,6 +28,14 @@ export type AuthResponse = {
   token: string;
   user: User;
 };
+
+export function adminCan(user: User, permission: string) {
+  return user.role === "admin" && (user.admin_role === "admin-owner" || user.permissions.includes(permission));
+}
+
+export function adminHome(user: User) {
+  return adminCan(user, "admin.analytics.view") ? "/admin" : adminCan(user, "admin.users.view") ? "/admin/users" : "/account";
+}
 
 type RegisterPayload = {
   email: string;

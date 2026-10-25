@@ -364,6 +364,8 @@ class PluginApiController extends Controller
     private function findCampaign(Server $server, ?string $country, ?string $language, RateTier $rateTier, int $expectedImpressions): ?Campaign
     {
         return Campaign::query()
+            ->whereHas('advertiserAccount', fn ($query) => $query->where('status', 'active')
+                ->whereHas('user', fn ($query) => $query->where('status', 'active')))
             ->where('status', 'active')
             ->where(function ($query) {
                 $query->whereNull('starts_at')->orWhere('starts_at', '<=', now());

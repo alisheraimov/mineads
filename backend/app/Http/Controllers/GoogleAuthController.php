@@ -20,10 +20,14 @@ class GoogleAuthController extends Controller
     {
         $googleUser = Socialite::driver('google')->stateless()->user();
 
-        $user = User::query()
+        $user = User::withTrashed()
             ->where('email', $googleUser->getEmail())
             ->orWhere('google_id', $googleUser->getId())
             ->first();
+
+        if ($user?->trashed()) {
+            return redirect()->away($this->frontendUrl('/login?error=deleted'));
+        }
 
         if (! $user) {
             $user = User::query()->create([

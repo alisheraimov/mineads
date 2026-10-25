@@ -8,7 +8,7 @@ import { cn } from "cn";
 import { AuthError, AuthIntro } from "@/components/auth/auth-shell";
 import { PrimaryButton } from "@/components/ui/primary-button";
 import { startRouteProgress } from "@/components/ui/route-progress";
-import { completeOnboarding, getCurrentUser } from "@/lib/auth";
+import { adminHome, completeOnboarding, getCurrentUser } from "@/lib/auth";
 
 type Path = "advertiser" | "publisher";
 
@@ -41,7 +41,7 @@ export function ChoosePathPanel() {
           router.replace(`/verify-email?email=${encodeURIComponent(data.email)}`);
         } else if (data.role === "admin") {
           startRouteProgress();
-          router.replace("/admin");
+          router.replace(adminHome(data));
         } else if (data.advertiser_account) {
           startRouteProgress();
           router.replace("/account-ready?role=advertiser");

@@ -20,7 +20,7 @@ import {
 import { AccountHeader } from "@/components/account/account-header";
 import { Button } from "@/components/ui/button";
 import { startRouteProgress } from "@/components/ui/route-progress";
-import { User, getCurrentUser, logout, clearToken } from "@/lib/auth";
+import { User, getCurrentUser, logout, clearToken, adminCan } from "@/lib/auth";
 import { campaignOptions } from "@/lib/campaigns";
 import { formatMicros } from "@/lib/advertiser-format";
 import { cn } from "@/lib/utils";
@@ -126,10 +126,11 @@ export function AdvertiserHeader({
   return <AccountHeader user={user} onLogout={onLogout} showNotifications />;
 }
 
-export function AdvertiserSidebar({ balance, workspace = "advertiser", onComingSoon }: {
+export function AdvertiserSidebar({ balance, workspace = "advertiser", onComingSoon, user }: {
   balance: number;
   workspace?: "advertiser" | "admin";
   onComingSoon?: (section: string) => void;
+  user?: User;
 }) {
   const pathname = usePathname();
   const isAdmin = workspace === "admin";
@@ -156,14 +157,14 @@ export function AdvertiserSidebar({ balance, workspace = "advertiser", onComingS
           Workspace
         </p>
         {isAdmin ? <>
-          <SidebarLink label="Overview" href="/admin" icon={LayoutDashboard} active={pathname === "/admin"} />
+          {(!user || adminCan(user, "admin.analytics.view")) && <SidebarLink label="Overview" href="/admin" icon={LayoutDashboard} active={pathname === "/admin"} />}
+          {(!user || adminCan(user, "admin.users.view")) && <SidebarLink label="Users & accounts" href="/admin/users" icon={Users} active={pathname.startsWith("/admin/users")} />}
           {[
-            { label: "Users & accounts", icon: Users },
-            { label: "Campaigns", icon: Megaphone },
-            { label: "Creatives", icon: Sparkles },
-            { label: "Publishers & servers", icon: Server },
-            { label: "Finance", icon: Wallet },
-          ].map(({ label, icon: Icon }) => (
+            { label: "Campaigns", icon: Megaphone, permission: "admin.campaigns.view" },
+            { label: "Creatives", icon: Sparkles, permission: "admin.creatives.review" },
+            { label: "Publishers & servers", icon: Server, permission: "admin.users.view" },
+            { label: "Finance", icon: Wallet, permission: "admin.finance.view" },
+          ].filter(item => !user || adminCan(user, item.permission)).map(({ label, icon: Icon }) => (
             <Button key={label} variant="ghost" className="h-9 w-full justify-start px-2 font-normal" onClick={() => onComingSoon?.(label)} aria-label={label + " (coming soon)"}>
               <Icon aria-hidden="true" />{label}
             </Button>
@@ -197,8 +198,8 @@ export function AdvertiserSidebar({ balance, workspace = "advertiser", onComingS
       <div className="min-h-8 flex-1" />
 
       {isAdmin ? <div className="space-y-1 rounded-lg border border-border bg-background p-3">
-        <p className="text-xs font-medium">Admin access</p>
-        <p className="text-xs text-muted-foreground">All marketplace data</p>
+        <p className="text-xs font-medium">{user?.admin_role ? ({"admin-owner":"Owner", "ad-ops":"Ad Operations", finance:"Finance", support:"Support"}[user.admin_role] ?? "Admin") : "Admin"} access</p>
+        <p className="text-xs text-muted-foreground">{user?.admin_role === "admin-owner" ? "Manage accounts and admins" : "Access based on assigned role"}</p>
       </div> : <div className="rounded-lg border border-border bg-background p-3">
         <p className="text-xs text-muted-foreground">Available balance</p>
         <p className="mt-3 text-xl font-semibold">{formatMicros(balance)}</p>

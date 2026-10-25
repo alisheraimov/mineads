@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PrimaryButton } from "@/components/ui/primary-button";
 import { startRouteProgress } from "@/components/ui/route-progress";
-import { getCurrentUser, googleRedirectUrl, login, setToken } from "@/lib/auth";
+import { adminHome, getCurrentUser, googleRedirectUrl, login, setToken } from "@/lib/auth";
 
 export function LoginForm() {
   const router = useRouter();
@@ -37,7 +37,7 @@ export function LoginForm() {
       } else if (!currentUser.data.email_verified_at) {
         router.push(`/verify-email?email=${encodeURIComponent(currentUser.data.email)}`);
       } else if (currentUser.data.role === "admin") {
-        router.push("/admin");
+        router.push(adminHome(currentUser.data));
       } else if (!currentUser.data.advertiser_account && !currentUser.data.publisher_account) {
         router.push("/choose-path");
       } else {

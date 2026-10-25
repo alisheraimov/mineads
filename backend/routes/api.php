@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
+use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Advertiser\BillingController;
 use App\Http\Controllers\Advertiser\CampaignController;
 use App\Http\Controllers\Advertiser\CreativeController;
@@ -14,6 +15,13 @@ use App\Http\Controllers\Publisher\ServerController as PublisherServerController
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('admin')->middleware(['auth:sanctum', 'active', 'admin', 'verified'])->group(function () {
+    Route::get('/users', [UserController::class, 'index']);
+    Route::post('/users', [UserController::class, 'store']);
+    Route::get('/users/{id}', [UserController::class, 'show'])->whereNumber('id');
+    Route::post('/users/{id}/suspend', [UserController::class, 'suspend'])->whereNumber('id');
+    Route::post('/users/{id}/reactivate', [UserController::class, 'reactivate'])->whereNumber('id');
+    Route::patch('/users/{id}/role', [UserController::class, 'role'])->whereNumber('id');
+    Route::delete('/users/{id}', [UserController::class, 'destroy'])->whereNumber('id');
     Route::get('/dashboard', [AdminDashboardController::class, 'show']);
     Route::get('/dashboard/performance', [AdminDashboardController::class, 'performance']);
 });

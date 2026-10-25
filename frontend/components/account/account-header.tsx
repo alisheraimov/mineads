@@ -11,7 +11,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import type { User } from "@/lib/auth";
+import { adminHome, type User } from "@/lib/auth";
 
 export function AccountHeader({
   user,
@@ -106,7 +106,7 @@ export function AccountHeader({
               </p>
               {user.role === "admin" && (
                 <Button asChild variant="ghost" className="h-9 justify-start">
-                  <Link href="/admin"><LayoutDashboard aria-hidden="true" />Admin Console</Link>
+                  <Link href={adminHome(user)}><LayoutDashboard aria-hidden="true" />Admin Console</Link>
                 </Button>
               )}
               {user.role === "advertiser" && (

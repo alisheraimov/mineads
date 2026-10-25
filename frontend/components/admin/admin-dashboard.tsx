@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useId, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowRight, CalendarDays, ChevronRight, Info, Loader2, RefreshCw, ShieldCheck } from "lucide-react";
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
@@ -12,7 +13,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
-import { ApiError, clearToken, getCurrentUser, getToken, logout, type User } from "@/lib/auth";
+import { ApiError, clearToken, getCurrentUser, getToken, logout, adminCan, adminHome, type User } from "@/lib/auth";
 import { getAdminPerformance, getAdminSnapshot, type AdminPerformance, type AdminPeriod } from "@/lib/admin";
 import { cn } from "@/lib/utils";
 
@@ -103,6 +104,10 @@ export function AdminDashboard() {
         router.replace("/verify-email?email=" + encodeURIComponent(data.email));
         return;
       }
+      if (!adminCan(data, "admin.analytics.view")) {
+        router.replace(adminHome(data));
+        return;
+      }
       setUser(data);
     }).catch(error => {
       if (!active) return;
@@ -136,7 +141,7 @@ export function AdminDashboard() {
     <div className="min-h-screen bg-background text-foreground">
       <AccountHeader user={user} onLogout={() => { void handleLogout(); }} />
       <div className="flex min-h-[calc(100vh-72px)]">
-        <AdvertiserSidebar balance={0} workspace="admin" onComingSoon={setComingSoon} />
+        <AdvertiserSidebar balance={0} workspace="admin" user={user} onComingSoon={setComingSoon} />
         <main className="min-w-0 flex-1 bg-canvas px-5 py-8 sm:px-8 lg:px-10">
           <div className="mx-auto flex max-w-[1112px] flex-col gap-6">
             <nav aria-label="Breadcrumb" className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -149,7 +154,7 @@ export function AdminDashboard() {
               </Button>
             </div>
             <div className="flex flex-wrap gap-2 lg:hidden" aria-label="Admin navigation">
-              {["Users & accounts", "Campaigns", "Creatives", "Publishers & servers", "Finance"].map(label => <Button key={label} variant="outline" size="sm" onClick={() => setComingSoon(label)}>{label}</Button>)}
+              {adminCan(user, "admin.users.view") && <Button asChild variant="outline" size="sm"><Link href="/admin/users">Users & accounts</Link></Button>}
             </div>
             <>
               <section aria-labelledby="marketplace-heading" className="space-y-4">
@@ -196,11 +201,11 @@ export function AdminDashboard() {
                     <Metric label="Reported impressions" value={number(p.metrics.reported_impressions)} caption="Received during selected period" />
                     <Metric label="Validated impressions" value={number(p.metrics.validated_impressions)} caption="Processed during selected period" />
                     <Metric label="Invalid impressions" value={number(p.metrics.invalid_impressions)} caption={number(p.metrics.invalid_rate) + "% of processed impressions"} />
-                    <Metric label="Advertiser spend" value={money(p.metrics.spend_micros, p.currency)} caption="Validated impressions · USD" />
+                    {adminCan(user, "admin.finance.view") && <><Metric label="Advertiser spend" value={money(p.metrics.spend_micros, p.currency)} caption="Validated impressions · USD" />
                     <Metric label="Publisher earnings" value={money(p.metrics.earnings_micros, p.currency)} caption="Includes earnings awaiting release" />
-                    <Metric label="Platform fee" value={money(p.metrics.fee_micros, p.currency)} caption="Before operating and payment costs" />
+                    <Metric label="Platform fee" value={money(p.metrics.fee_micros, p.currency)} caption="Before operating and payment costs" /></>}
                   </div>
-                  <PerformanceChart performance={p} />
+                  <PerformanceChart performance={p} canViewFinance={adminCan(user, "admin.finance.view")} />
                 </> : !performance.error && <><MetricSkeleton count={6} /><div role="status" aria-label="Loading performance chart" className="h-80 animate-pulse rounded-lg border bg-muted" /></>}
               </section>
               <section aria-labelledby="attention-heading" className="space-y-4">
@@ -208,7 +213,7 @@ export function AdminDashboard() {
                 {s ? <div className="grid gap-4 xl:grid-cols-3">
                   <Attention title="Creative reviews" value={s.pending_creatives ? number(s.pending_creatives) + " pending" : "All caught up"} detail={s.oldest_pending_creative_at ? "Oldest submission · " + date(s.oldest_pending_creative_at) + " at " + time(s.oldest_pending_creative_at) + " UTC" : "No creatives awaiting review"} action="Review creatives" onClick={() => setComingSoon("Creative reviews")} />
                   <Attention title="Unhealthy servers" value={s.unhealthy_servers ? number(s.unhealthy_servers) + " servers" : "All healthy"} detail={s.offline_servers + " offline · " + s.high_invalid_rate_servers + " high invalid rate · counts may overlap"} action="Inspect servers" onClick={() => setComingSoon("Unhealthy servers")} />
-                  <Attention title="Pending payouts" value={s.pending_payouts ? number(s.pending_payouts) + " pending" : "All caught up"} detail={s.pending_payout_amounts.length ? s.pending_payout_amounts.map(amount => money(amount.amount_micros, amount.currency)).join(" · ") + " awaiting processing" : "No payouts awaiting processing"} action="View payouts" onClick={() => setComingSoon("Pending payouts")} />
+                  {adminCan(user, "admin.finance.view") && <Attention title="Pending payouts" value={s.pending_payouts ? number(s.pending_payouts) + " pending" : "All caught up"} detail={s.pending_payout_amounts.length ? s.pending_payout_amounts.map(amount => money(amount.amount_micros, amount.currency)).join(" · ") + " awaiting processing" : "No payouts awaiting processing"} action="View payouts" onClick={() => setComingSoon("Pending payouts")} />}
                 </div> : snapshot.error ? <p className="text-sm text-muted-foreground">Queues are unavailable until the marketplace snapshot loads.</p> : <MetricSkeleton count={3} />}
                 {s && <details className="text-xs text-muted-foreground"><summary className="w-fit cursor-pointer">Server health rules</summary><p className="mt-2 max-w-3xl leading-5">An active server is offline without a heartbeat in the last {s.health_rules.heartbeat_timeout_seconds / 60} minutes. It is also unhealthy when more than {s.health_rules.invalid_rate_percent}% of at least {s.health_rules.minimum_processed_impressions} processed impressions are invalid over the last 24 hours. A server matching both conditions is counted once.</p></details>}
               </section>
@@ -251,7 +256,7 @@ function Attention({ title, value, detail, action, onClick }: { title: string; v
   return <div className="flex flex-col rounded-lg border bg-card p-5"><h3 className="text-sm font-medium">{title}</h3><p className="mt-3 text-2xl font-semibold tabular-nums">{value}</p><p className="mb-3 mt-2 text-xs leading-5 text-muted-foreground">{detail}</p><Button variant="link" className="mt-auto h-auto justify-start self-start p-0 text-xs" onClick={onClick}>{action}<ArrowRight className="size-3" aria-hidden="true" /></Button></div>;
 }
 
-function PerformanceChart({ performance }: { performance: AdminPerformance }) {
+function PerformanceChart({ performance, canViewFinance }: { performance: AdminPerformance; canViewFinance: boolean }) {
   const gradientId = useId().replace(/:/g, "");
   const [metric, setMetric] = useState("impressions");
   const monetary = metric !== "impressions";
@@ -261,7 +266,7 @@ function PerformanceChart({ performance }: { performance: AdminPerformance }) {
     <div className="flex flex-wrap items-center justify-between gap-4 px-6 pt-6">
       <div><h3 className="text-base font-semibold">Performance over time</h3><p className="mt-1 text-xs text-muted-foreground">{monetary ? "Amount in USD" : "Impressions"} by {performance.period.interval} · UTC</p></div>
       <TabsList aria-label="Chart metric" className="h-auto max-w-full flex-wrap">
-        <TabsTrigger value="impressions">Impressions</TabsTrigger><TabsTrigger value="spend_micros">Spend</TabsTrigger><TabsTrigger value="earnings_micros">Earnings</TabsTrigger><TabsTrigger value="fee_micros">Platform fee</TabsTrigger>
+        <TabsTrigger value="impressions">Impressions</TabsTrigger>{canViewFinance && <><TabsTrigger value="spend_micros">Spend</TabsTrigger><TabsTrigger value="earnings_micros">Earnings</TabsTrigger><TabsTrigger value="fee_micros">Platform fee</TabsTrigger></>}
       </TabsList>
     </div>
     {["impressions", "spend_micros", "earnings_micros", "fee_micros"].map(tab => <TabsContent value={tab} key={tab} className="m-0 px-4 pb-5 pt-4 sm:px-6">

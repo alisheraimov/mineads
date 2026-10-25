@@ -19,6 +19,7 @@ class UserResource extends JsonResource
             'name' => $this->name,
             'email' => $this->email,
             'role' => $this->role,
+            'admin_role' => $this->role === 'admin' ? $this->roles->pluck('name')->first() : null,
             'status' => $this->status,
             'avatar_url' => $this->avatar_url,
             'email_verified_at' => $this->email_verified_at,
