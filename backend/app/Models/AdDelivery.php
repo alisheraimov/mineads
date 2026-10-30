@@ -29,7 +29,7 @@ class AdDelivery extends Model
 
     public function campaign(): BelongsTo
     {
-        return $this->belongsTo(Campaign::class);
+        return $this->belongsTo(Campaign::class)->withTrashed();
     }
 
     public function creative(): BelongsTo

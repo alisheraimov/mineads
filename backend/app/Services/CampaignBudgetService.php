@@ -26,6 +26,11 @@ class CampaignBudgetService
                 ->first();
         }
 
+        $current = Campaign::withTrashed()->find($campaign->id);
+        if (! $current || ($current->trashed() && $billableAt->greaterThanOrEqualTo($current->deleted_at))) {
+            return false;
+        }
+
         return $billableMicros > 0
             && $this->hasBudgetFor($campaign, $billableMicros, $billableAt);
     }

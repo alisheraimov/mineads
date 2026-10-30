@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\Admin\CampaignController as AdminCampaignController;
+use App\Http\Controllers\Admin\CreativeController as AdminCreativeController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Advertiser\BillingController;
@@ -15,6 +17,16 @@ use App\Http\Controllers\Publisher\ServerController as PublisherServerController
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('admin')->middleware(['auth:sanctum', 'active', 'admin', 'verified'])->group(function () {
+    Route::get('/creatives', [AdminCreativeController::class, 'index']);
+    Route::get('/creatives/options', [AdminCreativeController::class, 'options']);
+    Route::get('/creatives/{id}', [AdminCreativeController::class, 'show'])->whereNumber('id');
+    Route::post('/creatives/{id}/moderate', [AdminCreativeController::class, 'moderate'])->whereNumber('id');
+    Route::delete('/creatives/{id}', [AdminCreativeController::class, 'destroy'])->whereNumber('id');
+    Route::get('/campaigns', [AdminCampaignController::class, 'index']);
+    Route::get('/campaigns/advertisers', [AdminCampaignController::class, 'advertisers']);
+    Route::get('/campaigns/{id}', [AdminCampaignController::class, 'show'])->whereNumber('id');
+    Route::get('/campaigns/{id}/creatives', [AdminCampaignController::class, 'creatives'])->whereNumber('id');
+    Route::delete('/campaigns/{id}', [AdminCampaignController::class, 'destroy'])->whereNumber('id');
     Route::get('/users', [UserController::class, 'index']);
     Route::post('/users', [UserController::class, 'store']);
     Route::get('/users/{id}', [UserController::class, 'show'])->whereNumber('id');

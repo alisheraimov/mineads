@@ -8,6 +8,7 @@ use App\Models\AdCreative;
 use App\Models\AdvertiserAccount;
 use App\Models\Campaign;
 use App\Models\ValidatedImpression;
+use App\Services\AdminCreativeService;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -100,7 +101,7 @@ class CreativeController extends Controller
             $campaign = Campaign::query()->where('advertiser_account_id', $account->id)->lockForUpdate()->findOrFail($data['campaign_id']);
             abort_if($campaign->status === 'ended', 409, 'Choose a campaign that has not ended.');
 
-            return $campaign->creatives()->create([...$data, 'status' => 'pending_review', 'type' => 'chat']);
+            return $campaign->creatives()->create([...$data, 'status' => 'pending_review', 'type' => 'chat', 'review_submitted_at' => now()]);
         });
         $this->invalidate($account);
 
@@ -112,12 +113,21 @@ class CreativeController extends Controller
         $account = $this->account($request, true);
         $model = DB::transaction(function () use ($request, $account, $creative): AdCreative {
             $model = $this->owned($account, $creative, true);
+            $previous = $model->status;
             $model->fill($request->validated());
+            $resubmitted = false;
             if ($model->isDirty(['message_text', 'click_url', 'language'])) {
                 $model->status = 'pending_review';
                 $model->rejection_reason = null;
+                $model->rejection_code = null;
+                $model->rejection_explanation = null;
+                $model->review_submitted_at = now();
+                $resubmitted = true;
             }
             $model->save();
+            if ($resubmitted) {
+                app(AdminCreativeService::class)->record($model, $request->user(), 'resubmitted', $previous);
+            }
 
             return $model;
         });
@@ -144,7 +154,11 @@ class CreativeController extends Controller
     public function destroy(Request $request, int $creative): JsonResponse
     {
         $account = $this->account($request, true);
-        $this->owned($account, $creative)->delete();
+        DB::transaction(function () use ($request, $account, $creative): void {
+            $model = $this->owned($account, $creative, true);
+            $model->delete();
+            app(AdminCreativeService::class)->record($model, $request->user(), 'deleted', $model->status);
+        });
         $this->invalidate($account);
 
         return response()->json(['message' => 'Creative deleted.']);

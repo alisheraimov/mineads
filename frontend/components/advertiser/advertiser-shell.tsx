@@ -159,9 +159,9 @@ export function AdvertiserSidebar({ balance, workspace = "advertiser", onComingS
         {isAdmin ? <>
           {(!user || adminCan(user, "admin.analytics.view")) && <SidebarLink label="Overview" href="/admin" icon={LayoutDashboard} active={pathname === "/admin"} />}
           {(!user || adminCan(user, "admin.users.view")) && <SidebarLink label="Users & accounts" href="/admin/users" icon={Users} active={pathname.startsWith("/admin/users")} />}
+          {(!user || adminCan(user, "admin.campaigns.view")) && <SidebarLink label="Campaigns" href="/admin/campaigns" icon={Megaphone} active={pathname.startsWith("/admin/campaigns")} />}
+          {(!user || adminCan(user, "admin.creatives.view") || adminCan(user, "admin.creatives.review")) && <SidebarLink label="Creatives" href="/admin/creatives" icon={Sparkles} active={pathname.startsWith("/admin/creatives")} />}
           {[
-            { label: "Campaigns", icon: Megaphone, permission: "admin.campaigns.view" },
-            { label: "Creatives", icon: Sparkles, permission: "admin.creatives.review" },
             { label: "Publishers & servers", icon: Server, permission: "admin.users.view" },
             { label: "Finance", icon: Wallet, permission: "admin.finance.view" },
           ].filter(item => !user || adminCan(user, item.permission)).map(({ label, icon: Icon }) => (

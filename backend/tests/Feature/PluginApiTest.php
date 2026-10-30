@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\AdCreative;
 use App\Models\AdDelivery;
+use App\Models\AdminCreativeEvent;
 use App\Models\AdvertiserAccount;
 use App\Models\AdvertiserLedgerEntry;
 use App\Models\Campaign;
@@ -553,6 +554,65 @@ class PluginApiTest extends TestCase
         $this->assertInvalidUnbilledImpression($raw, 'player_frequency_cap_exceeded', 60);
     }
 
+    public static function creativeWithdrawalActions(): array
+    {
+        return [['rejected'], ['returned_to_review'], ['resubmitted'], ['deleted']];
+    }
+
+    #[DataProvider('creativeWithdrawalActions')]
+    public function test_impressions_displayed_after_creative_withdrawal_are_invalid_and_unbilled(string $action): void
+    {
+        $raw = $this->pendingValidationEvent();
+        AdminCreativeEvent::create(['creative_id' => $raw->adDelivery->creative_id, 'actor_name' => 'Admin', 'action' => $action]);
+
+        app(ImpressionValidationService::class)->validate($raw->id);
+
+        $this->assertInvalidUnbilledImpression($raw, 'creative_withdrawn_before_display', 0);
+    }
+
+    public function test_impressions_displayed_before_creative_deletion_still_bill_after_deletion(): void
+    {
+        $raw = $this->pendingValidationEvent();
+        $delivery = $raw->adDelivery;
+        AdvertiserLedgerEntry::factory()->create(['advertiser_account_id' => $delivery->campaign->advertiser_account_id, 'campaign_id' => null, 'type' => 'deposit', 'amount_micros' => 10000000]);
+        $this->travel(1)->seconds();
+        AdCreative::findOrFail($delivery->creative_id)->delete();
+        AdminCreativeEvent::create(['creative_id' => $delivery->creative_id, 'actor_name' => 'Admin', 'action' => 'deleted']);
+
+        app(ImpressionValidationService::class)->validate($raw->id);
+
+        $this->assertSame('valid', $raw->fresh()->validation_status);
+        $this->assertDatabaseHas('validated_impressions', ['raw_impression_event_id' => $raw->id, 'creative_id' => $delivery->creative_id]);
+        $this->assertDatabaseHas('advertiser_ledger_entries', ['campaign_id' => $delivery->campaign_id, 'type' => 'spend', 'amount_micros' => -2000]);
+    }
+
+    public static function nonServingCreativeStates(): array
+    {
+        return [['rejected'], ['pending_review'], ['deleted']];
+    }
+
+    #[DataProvider('nonServingCreativeStates')]
+    public function test_withdrawing_or_deleting_a_creative_stops_new_ad_selection(string $state): void
+    {
+        [$token] = $this->activatedServer();
+        $advertiser = AdvertiserAccount::factory()->create(['user_id' => User::factory()->create(['role' => 'advertiser'])->id]);
+        $campaign = $this->targetedCampaign($advertiser);
+        $creative = $this->approvedCreative($campaign);
+        $this->usRateTier();
+        AdvertiserLedgerEntry::factory()->create(['advertiser_account_id' => $advertiser->id, 'campaign_id' => null, 'type' => 'deposit', 'amount_micros' => 10000000]);
+        $payload = ['placement' => 'chat', 'audiences' => [['audience_id' => 'aud', 'country' => 'US', 'language' => 'en', 'eligible_player_count' => 1]]];
+        $headers = ['Authorization' => 'Bearer '.$token];
+        $this->postJson('/api/plugin/v1/ads/request', $payload, $headers)->assertOk()->assertJsonPath('decisions.0.decision', 'serve');
+        if ($state === 'deleted') {
+            $creative->delete();
+        } else {
+            $creative->update(['status' => $state]);
+        }
+
+        $this->postJson('/api/plugin/v1/ads/request', $payload, $headers)->assertOk()->assertJsonPath('decisions.0.decision', 'no_fill');
+        $this->assertDatabaseHas('campaigns', ['id' => $campaign->id, 'status' => 'active']);
+    }
+
     private function pendingValidationEvent(): RawImpressionEvent
     {
         $this->freezeTime();
@@ -584,6 +644,25 @@ class PluginApiTest extends TestCase
         $this->assertDatabaseCount('validated_impressions', 0);
         $this->assertSame(0, AdvertiserLedgerEntry::query()->where('type', 'spend')->count());
         $this->assertDatabaseCount('publisher_ledger_entries', 0);
+    }
+
+    public function test_deleted_campaign_stops_new_delivery_and_retains_creatives_and_delivery_history(): void
+    {
+        [$token] = $this->activatedServer();
+        $advertiser = AdvertiserAccount::factory()->create(['user_id' => User::factory()->create(['role' => 'advertiser'])->id]);
+        $campaign = $this->targetedCampaign($advertiser);
+        $creative = $this->approvedCreative($campaign);
+        $this->usRateTier();
+        AdvertiserLedgerEntry::factory()->create(['advertiser_account_id' => $advertiser->id, 'campaign_id' => null, 'type' => 'deposit', 'amount_micros' => 10000000]);
+        $payload = ['placement' => 'chat', 'audiences' => [['audience_id' => 'aud', 'country' => 'US', 'language' => 'en', 'eligible_player_count' => 1]]];
+        $headers = ['Authorization' => 'Bearer '.$token];
+        $this->postJson('/api/plugin/v1/ads/request', $payload, $headers)->assertOk()->assertJsonPath('decisions.0.decision', 'serve');
+
+        $campaign->delete();
+
+        $this->postJson('/api/plugin/v1/ads/request', $payload, $headers)->assertOk()->assertJsonPath('decisions.0.decision', 'no_fill');
+        $this->assertNotSoftDeleted($creative);
+        $this->assertDatabaseHas('ad_deliveries', ['campaign_id' => $campaign->id, 'decision' => 'served']);
     }
 
     private function activatedServer(bool $sendHeartbeat = false): array

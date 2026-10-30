@@ -2,7 +2,9 @@
 
 namespace App\Services;
 
+use App\Models\AdCreative;
 use App\Models\AdDelivery;
+use App\Models\AdminCreativeEvent;
 use App\Models\AdvertiserLedgerEntry;
 use App\Models\PublisherLedgerEntry;
 use App\Models\RawImpressionEvent;
@@ -86,6 +88,13 @@ class ImpressionValidationService
 
         if ($delivery->expires_at && $raw->displayed_at->gt($delivery->expires_at)) {
             return $this->invalid('displayed_after_token_expiry');
+        }
+
+        $creative = AdCreative::withTrashed()->find($delivery->creative_id);
+        if (! $creative || ($creative->deleted_at && $raw->displayed_at->gte($creative->deleted_at)) || AdminCreativeEvent::query()
+            ->where('creative_id', $delivery->creative_id)->whereIn('action', ['rejected', 'returned_to_review', 'resubmitted', 'deleted'])
+            ->where('created_at', '>=', $delivery->requested_at)->where('created_at', '<=', $raw->displayed_at)->exists()) {
+            return $this->invalid('creative_withdrawn_before_display', 0);
         }
 
         if ($raw->received_at->lt($raw->displayed_at->copy()->subSeconds(self::DISPLAY_EARLY_GRACE_SECONDS))) {

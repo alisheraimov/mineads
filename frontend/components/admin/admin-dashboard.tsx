@@ -165,7 +165,7 @@ export function AdminDashboard() {
                 {snapshot.error && <SectionError message={snapshot.error} stale={!!s} onRetry={snapshot.refresh} />}
                 {s ? <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
                   <Metric label="Active campaigns" value={number(s.active_campaigns)} caption="Currently active campaigns" />
-                  <Metric label="Pending creative reviews" value={number(s.pending_creatives)} caption="Open review queue" onClick={() => setComingSoon("Creative reviews")} />
+                  <Metric label="Pending creative reviews" value={number(s.pending_creatives)} caption="Open review queue" onClick={adminCan(user, "admin.creatives.view") || adminCan(user, "admin.creatives.review") ? () => router.push("/admin/creatives") : undefined} />
                   <Metric label="Active publisher servers" value={number(s.active_servers)} caption="Enabled to serve ads" />
                   <Metric label="Online servers" blinkingDot value={number(s.online_servers) + " / " + number(s.active_servers)} caption={"Active · heartbeat within " + s.health_rules.heartbeat_timeout_seconds / 60 + " min"} />
                 </div> : !snapshot.error && <MetricSkeleton count={4} />}
@@ -211,7 +211,7 @@ export function AdminDashboard() {
               <section aria-labelledby="attention-heading" className="space-y-4">
                 <div className="flex flex-wrap items-center justify-between gap-2"><h2 id="attention-heading" className="text-base font-semibold">Needs attention</h2><p className="text-xs text-muted-foreground">Current queues · independent of selected dates</p></div>
                 {s ? <div className="grid gap-4 xl:grid-cols-3">
-                  <Attention title="Creative reviews" value={s.pending_creatives ? number(s.pending_creatives) + " pending" : "All caught up"} detail={s.oldest_pending_creative_at ? "Oldest submission · " + date(s.oldest_pending_creative_at) + " at " + time(s.oldest_pending_creative_at) + " UTC" : "No creatives awaiting review"} action="Review creatives" onClick={() => setComingSoon("Creative reviews")} />
+                  <Attention title="Creative reviews" value={s.pending_creatives ? number(s.pending_creatives) + " pending" : "All caught up"} detail={s.oldest_pending_creative_at ? "Oldest submission · " + date(s.oldest_pending_creative_at) + " at " + time(s.oldest_pending_creative_at) + " UTC" : "No creatives awaiting review"} action="Review creatives" onClick={adminCan(user, "admin.creatives.view") || adminCan(user, "admin.creatives.review") ? () => router.push("/admin/creatives") : undefined} />
                   <Attention title="Unhealthy servers" value={s.unhealthy_servers ? number(s.unhealthy_servers) + " servers" : "All healthy"} detail={s.offline_servers + " offline · " + s.high_invalid_rate_servers + " high invalid rate · counts may overlap"} action="Inspect servers" onClick={() => setComingSoon("Unhealthy servers")} />
                   {adminCan(user, "admin.finance.view") && <Attention title="Pending payouts" value={s.pending_payouts ? number(s.pending_payouts) + " pending" : "All caught up"} detail={s.pending_payout_amounts.length ? s.pending_payout_amounts.map(amount => money(amount.amount_micros, amount.currency)).join(" · ") + " awaiting processing" : "No payouts awaiting processing"} action="View payouts" onClick={() => setComingSoon("Pending payouts")} />}
                 </div> : snapshot.error ? <p className="text-sm text-muted-foreground">Queues are unavailable until the marketplace snapshot loads.</p> : <MetricSkeleton count={3} />}
@@ -252,8 +252,8 @@ function MetricSkeleton({ count }: { count: number }) {
   return <div role="status" aria-label="Loading metrics" className={cn("grid gap-4 sm:grid-cols-2", count === 4 ? "xl:grid-cols-4" : "xl:grid-cols-3")}>{Array.from({ length: count }, (_, i) => <div key={i} className="h-[132px] animate-pulse rounded-lg border bg-muted" />)}</div>;
 }
 
-function Attention({ title, value, detail, action, onClick }: { title: string; value: string; detail: string; action: string; onClick: () => void }) {
-  return <div className="flex flex-col rounded-lg border bg-card p-5"><h3 className="text-sm font-medium">{title}</h3><p className="mt-3 text-2xl font-semibold tabular-nums">{value}</p><p className="mb-3 mt-2 text-xs leading-5 text-muted-foreground">{detail}</p><Button variant="link" className="mt-auto h-auto justify-start self-start p-0 text-xs" onClick={onClick}>{action}<ArrowRight className="size-3" aria-hidden="true" /></Button></div>;
+function Attention({ title, value, detail, action, onClick }: { title: string; value: string; detail: string; action: string; onClick?: () => void }) {
+  return <div className="flex flex-col rounded-lg border bg-card p-5"><h3 className="text-sm font-medium">{title}</h3><p className="mt-3 text-2xl font-semibold tabular-nums">{value}</p><p className="mb-3 mt-2 text-xs leading-5 text-muted-foreground">{detail}</p>{onClick && <Button variant="link" className="mt-auto h-auto justify-start self-start p-0 text-xs" onClick={onClick}>{action}<ArrowRight className="size-3" aria-hidden="true" /></Button>}</div>;
 }
 
 function PerformanceChart({ performance, canViewFinance }: { performance: AdminPerformance; canViewFinance: boolean }) {

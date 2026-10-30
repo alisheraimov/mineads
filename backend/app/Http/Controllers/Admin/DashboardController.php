@@ -3,12 +3,12 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\AdCreative;
 use App\Models\Campaign;
 use App\Models\Payout;
 use App\Models\RawImpressionEvent;
 use App\Models\Server;
 use App\Models\ValidatedImpression;
+use App\Services\AdminCreativeService;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
@@ -40,7 +40,8 @@ class DashboardController extends Controller
         $unhealthy = (clone $active)->where(fn (Builder $query) => $query
             ->whereIn('id', (clone $offline)->select('servers.id'))
             ->orWhereIn('id', (clone $risky)->select('servers.id')));
-        $pendingCreatives = AdCreative::query()->where('status', 'pending_review');
+        $pendingCreatives = app(AdminCreativeService::class)->reviewableQuery()->where('status', 'pending_review');
+        $oldestPendingCreative = (clone $pendingCreatives)->orderByRaw('COALESCE(review_submitted_at, created_at) ASC')->first();
         $payouts = Payout::query()->where('status', 'pending')
             ->selectRaw('currency, COUNT(*) as count, SUM(amount_micros) as amount_micros')
             ->groupBy('currency')->orderBy('currency')->get();
@@ -50,7 +51,7 @@ class DashboardController extends Controller
             'active_servers' => (clone $active)->count(),
             'online_servers' => (clone $online)->count(),
             'pending_creatives' => (clone $pendingCreatives)->count(),
-            'oldest_pending_creative_at' => (clone $pendingCreatives)->oldest()->value('created_at'),
+            'oldest_pending_creative_at' => $oldestPendingCreative?->review_submitted_at ?? $oldestPendingCreative?->created_at,
             'unhealthy_servers' => $unhealthy->count(),
             'offline_servers' => $offline->count(),
             'high_invalid_rate_servers' => $risky->count(),

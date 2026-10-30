@@ -16,7 +16,7 @@ export function useAdmin() {
   if (!user) throw new Error("Admin context is unavailable.");
   return user;
 }
-export function AdminShell({ children }: { children: React.ReactNode }) {
+export function AdminShell({ children, requiredPermission = "admin.users.view" }: { children: React.ReactNode; requiredPermission?: string }) {
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
   const [comingSoon, setComingSoon] = useState("");
@@ -28,11 +28,11 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
       if (data.status !== "active") { router.replace("/account-suspended"); return; }
       if (data.role !== "admin") { router.replace(data.role === "publisher" ? "/publisher" : "/advertiser"); return; }
       if (!data.email_verified_at) { router.replace("/verify-email?email=" + encodeURIComponent(data.email)); return; }
-      if (!adminCan(data, "admin.users.view")) { router.replace(adminHome(data)); return; }
+      if (!adminCan(data, requiredPermission) && !(requiredPermission === "admin.creatives.view" && adminCan(data, "admin.creatives.review"))) { router.replace(adminHome(data)); return; }
       setUser(data);
     }).catch(() => { if (active) router.replace("/login"); });
     return () => { active = false; };
-  }, [router]);
+  }, [router, requiredPermission]);
   if (!user) return <main className="grid min-h-screen place-items-center"><Loader2 className="size-5 animate-spin" aria-label="Verifying access" /></main>;
   return <AdminContext.Provider value={user}>
     <div className="min-h-screen bg-background text-foreground">
@@ -43,7 +43,9 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
           <div className="mx-auto max-w-[1112px]">
             <nav className="mb-6 flex gap-4 border-b pb-3 text-sm lg:hidden" aria-label="Admin navigation">
               {adminCan(user, "admin.analytics.view") && <Link href="/admin">Overview</Link>}
-              <Link href="/admin/users">Users & accounts</Link>
+              {adminCan(user, "admin.users.view") && <Link href="/admin/users">Users & accounts</Link>}
+              {adminCan(user, "admin.campaigns.view") && <Link href="/admin/campaigns">Campaigns</Link>}
+              {(adminCan(user, "admin.creatives.view") || adminCan(user, "admin.creatives.review")) && <Link href="/admin/creatives">Creatives</Link>}
             </nav>
             {children}
           </div>

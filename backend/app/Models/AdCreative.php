@@ -18,7 +18,7 @@ class AdCreative extends Model
 
     protected function casts(): array
     {
-        return ['is_paused' => 'boolean'];
+        return ['is_paused' => 'boolean', 'review_submitted_at' => 'datetime'];
     }
 
     public function campaign(): BelongsTo

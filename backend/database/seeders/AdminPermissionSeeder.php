@@ -18,6 +18,7 @@ class AdminPermissionSeeder extends Seeder
             'admin.users.manage',
             'admin.campaigns.view',
             'admin.campaigns.manage',
+            'admin.creatives.view',
             'admin.creatives.review',
             'admin.analytics.view',
             'admin.finance.view',
@@ -43,6 +44,7 @@ class AdminPermissionSeeder extends Seeder
             ->syncPermissions([
                 'admin.campaigns.view',
                 'admin.campaigns.manage',
+                'admin.creatives.view',
                 'admin.creatives.review',
                 'admin.analytics.view',
             ]);
@@ -61,6 +63,7 @@ class AdminPermissionSeeder extends Seeder
                 'admin.users.view',
                 'admin.campaigns.view',
                 'admin.plugins.view',
+                'admin.creatives.view',
             ]);
     }
 }
