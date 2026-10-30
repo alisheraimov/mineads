@@ -126,9 +126,9 @@ class PublisherServersApiTest extends TestCase
         $id = $created->json('data.server.id');
         $token = $created->json('data.setup_token');
 
-        $activation = $this->postJson('/api/plugin/v1/activate', ['setup_token' => $token])->assertCreated()->assertJsonPath('config.enabled', true);
+        $activation = $this->postJson('/api/plugin/v1/activate', ['setup_token' => $token])->assertCreated()->assertJsonPath('config.enabled', false);
         $this->postJson('/api/plugin/v1/activate', ['setup_token' => $token])->assertUnprocessable();
-        $new = $this->postJson('/api/publisher/servers/'.$id.'/setup-token')->assertOk()->assertJsonPath('data.server.status', 'pending');
+        $new = $this->postJson('/api/publisher/servers/'.$id.'/setup-token')->assertOk()->assertJsonPath('data.server.status', 'pending')->assertJsonPath('data.server.review_status', 'awaiting_activation');
         $this->assertDatabaseMissing('server_api_tokens', ['server_id' => $id, 'revoked_at' => null]);
         $this->withHeader('Authorization', 'Bearer '.$activation->json('api_token'))->postJson('/api/plugin/v1/heartbeat')->assertUnauthorized();
         $this->postJson('/api/plugin/v1/activate', ['setup_token' => $new->json('data.setup_token')])->assertCreated();

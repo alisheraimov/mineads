@@ -23,7 +23,7 @@ class DashboardController extends Controller
     {
         abort_unless($request->user()->adminCan('admin.analytics.view'), 403, 'Your role cannot view analytics.');
         $now = CarbonImmutable::now('UTC');
-        $active = Server::query()->where('status', 'active');
+        $active = Server::query()->where('status', 'active')->where('review_status', 'approved')->whereNotNull('activated_at');
         $online = (clone $active)->whereHas('latestHeartbeat', fn (Builder $query) => $query
             ->where('received_at', '>', $now->subSeconds(config('publisher.heartbeat_timeout_seconds')))
             ->where('received_at', '<=', $now));

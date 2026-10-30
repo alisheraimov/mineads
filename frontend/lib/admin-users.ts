@@ -40,6 +40,6 @@ export const userDateTime = (date: string) => userDate(date) + " · " + new Date
 
 export function permissionLabel(permission: string) {
   const [, section, action] = permission.split(".");
-  return { section: ({users:"Users & accounts", campaigns:"Campaigns", creatives:"Creatives", analytics:"Analytics", finance:"Finance", plugins:"Plugins", "rate-tiers":"Rate tiers"} as Record<string,string>)[section] ?? section,
+  return { section: ({users:"Users & accounts", campaigns:"Campaigns", creatives:"Creatives", servers:"Publishers & servers", analytics:"Analytics", finance:"Finance", plugins:"Plugins", "rate-tiers":"Rate tiers"} as Record<string,string>)[section] ?? section,
     action: action === "view" ? "View" : action === "review" ? "Review" : "Manage" };
 }

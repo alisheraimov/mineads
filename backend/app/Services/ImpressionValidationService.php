@@ -10,6 +10,7 @@ use App\Models\PublisherLedgerEntry;
 use App\Models\RawImpressionEvent;
 use App\Models\Server;
 use App\Models\ServerHeartbeat;
+use App\Models\ServerReviewEvent;
 use App\Models\ValidatedImpression;
 use Illuminate\Support\Facades\DB;
 
@@ -42,7 +43,7 @@ class ImpressionValidationService
             }
 
             $delivery = $raw->adDelivery;
-            $server = Server::query()->find($raw->server_id);
+            $server = Server::withTrashed()->lockForUpdate()->find($raw->server_id);
 
             $decision = $this->decide($raw, $delivery, $server);
 
@@ -76,6 +77,13 @@ class ImpressionValidationService
 
         if ($delivery->decision !== 'served') {
             return $this->invalid('delivery_not_served');
+        }
+
+        if (($server->deleted_at && $raw->displayed_at->gte($server->deleted_at))
+            || ServerReviewEvent::where('server_id', $server->id)
+                ->whereIn('action', ['host_changed', 'suspended', 'deleted', 'disabled', 'activation_reset'])
+                ->where('created_at', '>=', $delivery->requested_at)->where('created_at', '<=', $raw->displayed_at)->exists()) {
+            return $this->invalid('server_withdrawn_before_display', 0);
         }
 
         if (! $delivery->campaign_id || ! $delivery->creative_id || ! $delivery->cpm_micros) {

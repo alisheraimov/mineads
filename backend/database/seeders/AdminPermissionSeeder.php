@@ -20,6 +20,8 @@ class AdminPermissionSeeder extends Seeder
             'admin.campaigns.manage',
             'admin.creatives.view',
             'admin.creatives.review',
+            'admin.servers.view',
+            'admin.servers.manage',
             'admin.analytics.view',
             'admin.finance.view',
             'admin.finance.manage',
@@ -46,6 +48,8 @@ class AdminPermissionSeeder extends Seeder
                 'admin.campaigns.manage',
                 'admin.creatives.view',
                 'admin.creatives.review',
+                'admin.servers.view',
+                'admin.servers.manage',
                 'admin.analytics.view',
             ]);
 
@@ -55,6 +59,7 @@ class AdminPermissionSeeder extends Seeder
                 'admin.analytics.view',
                 'admin.finance.view',
                 'admin.finance.manage',
+                'admin.servers.view',
             ]);
 
         Role::query()
@@ -63,6 +68,7 @@ class AdminPermissionSeeder extends Seeder
                 'admin.users.view',
                 'admin.campaigns.view',
                 'admin.plugins.view',
+                'admin.servers.view',
                 'admin.creatives.view',
             ]);
     }

@@ -10,6 +10,7 @@ import { ServerDetail, SetupResult, getServer, regenerateServerToken, removeServ
 import { ServerBreadcrumb, ServerMetric, ServerStatus, UnavailablePluginLinks, money, panelClass, utcDate } from "@/components/publisher/server-shared";
 import { ServerSetup } from "@/components/publisher/server-setup";
 import { ServerPerformancePanel } from "@/components/publisher/server-performance";
+import { PublisherServerReview } from "@/components/publisher/server-review";
 
 export function ServerDetailPage({ id }: { id: number }) {
   const router = useRouter();
@@ -50,7 +51,7 @@ export function ServerDetailPage({ id }: { id: number }) {
   if (server.status === "offline") issues.push("No heartbeat received in the last five minutes. Check that the server and plugin are running.");
   if (server.status === "suspended") issues.push("This server is suspended. Contact support before reconnecting.");
   if (server.status === "inactive") issues.push("This connection is disabled. Enable it to resume ad delivery.");
-  if (server.status === "active" && server.impressions_today === 0) issues.push("The plugin is connected, but no validated impressions have arrived today. Check player activity and ad availability.");
+  if (server.status === "active" && server.review_status === "approved" && server.impressions_today === 0) issues.push("The plugin is connected, but no validated impressions have arrived today. Check player activity and ad availability.");
   if (server.impressions_today === 0) issues.push("No earnings today because there are no validated impressions.");
 
   return <>
@@ -58,6 +59,7 @@ export function ServerDetailPage({ id }: { id: number }) {
     <div className="flex flex-wrap items-center justify-between gap-4"><div><h1 className="text-2xl font-semibold">{server.name}</h1><p className="mt-2 text-sm text-muted-foreground">Monitor performance, connection health and server setup.</p></div><Button asChild variant="outline"><Link href="/publisher/servers">Back to servers</Link></Button></div>
     {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
     {setup && <ServerSetup key={setup.setup_token} setup={setup} onActivated={load} />}
+    <PublisherServerReview server={server} onSaved={setServer} />
     <section className={panelClass}><div className="mb-5 flex justify-between gap-4"><h2 className="font-semibold">Server overview</h2><ServerStatus status={server.status} /></div><dl className="grid gap-4 text-sm sm:grid-cols-2 xl:grid-cols-4">{[["Server name", server.name], ["Host / domain", server.host], ["Category", server.category], ["Last seen", utcDate(server.last_seen_at)]].map(([label, value]) => <div key={label}><dt className="text-xs text-muted-foreground">{label}</dt><dd className="mt-2 break-words">{value}</dd></div>)}</dl></section>
     <section aria-label="Server metrics" className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4"><ServerMetric label="Online players" value={server.online_players} caption="Recent heartbeat only" /><ServerMetric label="Validated impressions today" value={server.impressions_today.toLocaleString("en-US")} caption="UTC · Validated only" /><ServerMetric label="Earnings today" value={money(server.earnings_today_micros, server.currency)} caption="Current estimate · UTC" /><ServerMetric label="Earnings this month" value={money(server.earnings_month_micros, server.currency)} caption="Calendar month · UTC" /></section>
     <ServerPerformancePanel id={id} currency={server.currency} />

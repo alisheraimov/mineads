@@ -2,12 +2,19 @@ import { apiRequest, getToken } from "@/lib/auth";
 
 export const serverCategories = ["survival", "skyblock", "factions", "minigames", "creative", "anarchy", "smp", "other"] as const;
 export type ManagedServer = {
+  review_status: string; review_reason: string | null; legacy_approval: boolean; suspension_reason: string | null;
   id: number; name: string; host: string; category: string;
   status: "pending" | "active" | "offline" | "inactive" | "suspended";
   enabled: boolean; last_seen_at: string | null; online_players: number;
   plugin_version: string | null; minecraft_version: string | null;
   plugin_update_available: boolean | null;
 };
+export function editServer(id: number, data: { name: string; host: string; category: string }) {
+  return apiRequest<{ data: ServerDetail }>(`/publisher/servers/${id}`, { token: getToken(), method: "PUT", body: JSON.stringify(data) });
+}
+export function resubmitServer(id: number) {
+  return apiRequest<{ data: ServerDetail }>(`/publisher/servers/${id}/resubmit`, { token: getToken(), method: "POST" });
+}
 export type ServerDetail = ManagedServer & {
   currency: string; created_at: string; activated_at: string | null;
   setup_token_expires_at: string | null; earnings_today_micros: number;

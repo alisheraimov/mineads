@@ -34,7 +34,7 @@ export function adminCan(user: User, permission: string) {
 }
 
 export function adminHome(user: User) {
-  return adminCan(user, "admin.analytics.view") ? "/admin" : adminCan(user, "admin.users.view") ? "/admin/users" : adminCan(user, "admin.campaigns.view") ? "/admin/campaigns" : adminCan(user, "admin.creatives.view") ? "/admin/creatives" : "/account";
+  return adminCan(user, "admin.analytics.view") ? "/admin" : adminCan(user, "admin.users.view") ? "/admin/users" : adminCan(user, "admin.campaigns.view") ? "/admin/campaigns" : adminCan(user, "admin.creatives.view") ? "/admin/creatives" : adminCan(user, "admin.servers.view") ? "/admin/servers" : "/account";
 }
 
 type RegisterPayload = {

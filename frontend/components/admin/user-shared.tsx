@@ -20,7 +20,7 @@ export function UsersError({ message, retry }: {message: string; retry:()=>void}
   return <div role="alert" className="flex items-center justify-between gap-4 rounded-lg border border-destructive/30 bg-card p-4 text-sm"><p>{message}</p><Button variant="outline" onClick={retry}>Retry</Button></div>;
 }
 export function UsersLoading() { return <div role="status" className="grid min-h-48 place-items-center"><Loader2 className="size-5 animate-spin" aria-label="Loading users" /></div>; }
-export function UserPanel({ title, description, children }: {title: string; description?: string; children: React.ReactNode}) {
+export function UserPanel({ title, description, children }: {title: React.ReactNode; description?: string; children: React.ReactNode}) {
   return <section className="space-y-5 rounded-lg border bg-card p-6"><div><h2 className="text-base font-semibold">{title}</h2>{description && <p className="mt-1 text-xs leading-5 text-muted-foreground">{description}</p>}</div>{children}</section>;
 }
 export function UserField({label, children}: {label:string; children:React.ReactNode}) {

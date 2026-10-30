@@ -13,6 +13,7 @@ use App\Models\Server;
 use App\Models\ServerApiToken;
 use App\Models\ServerHeartbeat;
 use App\Services\CampaignBudgetService;
+use App\Services\ServerReviewService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -61,6 +62,12 @@ class PluginApiController extends Controller
                 'activated_at' => now(),
                 'last_seen_at' => now(),
             ]);
+            $review = app(ServerReviewService::class);
+            if ($server->review_status === 'awaiting_activation') {
+                $review->submit($server, null, 'submitted');
+            } else {
+                $review->record($server, null, 'activated');
+            }
 
             ServerApiToken::query()->create([
                 'server_id' => $server->id,
@@ -137,60 +144,64 @@ class PluginApiController extends Controller
             'audiences.*.players.*.player_hash' => ['required_with:audiences.*.players', 'string', 'max:128'],
         ]);
 
-        $decisions = collect($data['audiences'])->map(function (array $audience) use ($server, $data) {
-            $country = isset($audience['country']) ? strtoupper($audience['country']) : null;
-            $language = isset($audience['language']) ? strtolower($audience['language']) : null;
-            $eligiblePlayerCount = (int) $audience['eligible_player_count'];
+        $decisions = DB::transaction(function () use ($server, $data) {
+            $server = Server::query()->lockForUpdate()->findOrFail($server->id);
 
-            $this->upsertPlayerSessions($server, $audience['players'] ?? [], $country, $language);
+            return collect($data['audiences'])->map(function (array $audience) use ($server, $data) {
+                $country = isset($audience['country']) ? strtoupper($audience['country']) : null;
+                $language = isset($audience['language']) ? strtolower($audience['language']) : null;
+                $eligiblePlayerCount = (int) $audience['eligible_player_count'];
 
-            if ($eligiblePlayerCount < 1 || ! $this->adServingEnabled($server)) {
-                return $this->recordNoFill($server, $data['placement'], $audience, $country, $language);
-            }
+                $this->upsertPlayerSessions($server, $audience['players'] ?? [], $country, $language);
 
-            $rateTier = $this->findRateTier($country);
-            $campaign = $rateTier ? $this->findCampaign($server, $country, $language, $rateTier, $eligiblePlayerCount) : null;
-            $creative = $campaign ? $this->findCreative($campaign, $language) : null;
+                if ($eligiblePlayerCount < 1 || ! $this->adServingEnabled($server)) {
+                    return $this->recordNoFill($server, $data['placement'], $audience, $country, $language);
+                }
 
-            if (! $campaign || ! $creative || ! $rateTier) {
-                return $this->recordNoFill($server, $data['placement'], $audience, $country, $language);
-            }
+                $rateTier = $this->findRateTier($country);
+                $campaign = $rateTier ? $this->findCampaign($server, $country, $language, $rateTier, $eligiblePlayerCount) : null;
+                $creative = $campaign ? $this->findCreative($campaign, $language) : null;
 
-            $plainImpressionToken = 'imp_'.Str::random(48);
+                if (! $campaign || ! $creative || ! $rateTier) {
+                    return $this->recordNoFill($server, $data['placement'], $audience, $country, $language);
+                }
 
-            $delivery = AdDelivery::query()->create([
-                'server_id' => $server->id,
-                'campaign_id' => $campaign->id,
-                'creative_id' => $creative->id,
-                'rate_tier_id' => $rateTier->id,
-                'cpm_micros' => $rateTier->cpm_micros,
-                'placement' => $data['placement'],
-                'audience_country' => $country,
-                'audience_language' => $language,
-                'requested_player_count' => $eligiblePlayerCount,
-                'decision' => 'served',
-                'impression_token_hash' => hash('sha256', $plainImpressionToken),
-                'expires_at' => now()->addMinutes(5),
-                'requested_at' => now(),
-            ]);
+                $plainImpressionToken = 'imp_'.Str::random(48);
 
-            return [
-                'audience_id' => $audience['audience_id'],
-                'decision' => 'serve',
-                'ad_delivery_id' => $delivery->id,
-                'campaign_id' => $campaign->id,
-                'creative_id' => $creative->id,
-                'placement' => $data['placement'],
-                'message' => [
-                    'plain' => $creative->message_text,
-                    'click_url' => $creative->click_url,
-                ],
-                'tracking' => [
-                    'impression_token' => $plainImpressionToken,
-                    'expires_at' => $delivery->expires_at?->toISOString(),
-                ],
-            ];
-        })->values();
+                $delivery = AdDelivery::query()->create([
+                    'server_id' => $server->id,
+                    'campaign_id' => $campaign->id,
+                    'creative_id' => $creative->id,
+                    'rate_tier_id' => $rateTier->id,
+                    'cpm_micros' => $rateTier->cpm_micros,
+                    'placement' => $data['placement'],
+                    'audience_country' => $country,
+                    'audience_language' => $language,
+                    'requested_player_count' => $eligiblePlayerCount,
+                    'decision' => 'served',
+                    'impression_token_hash' => hash('sha256', $plainImpressionToken),
+                    'expires_at' => now()->addMinutes(5),
+                    'requested_at' => now(),
+                ]);
+
+                return [
+                    'audience_id' => $audience['audience_id'],
+                    'decision' => 'serve',
+                    'ad_delivery_id' => $delivery->id,
+                    'campaign_id' => $campaign->id,
+                    'creative_id' => $creative->id,
+                    'placement' => $data['placement'],
+                    'message' => [
+                        'plain' => $creative->message_text,
+                        'click_url' => $creative->click_url,
+                    ],
+                    'tracking' => [
+                        'impression_token' => $plainImpressionToken,
+                        'expires_at' => $delivery->expires_at?->toISOString(),
+                    ],
+                ];
+            })->values();
+        }, 3);
 
         $server->update(['last_seen_at' => now()]);
 
@@ -338,6 +349,8 @@ class PluginApiController extends Controller
         $publisher = $server->publisherAccount;
 
         return $server->status === 'active'
+            && $server->review_status === 'approved'
+            && $server->activated_at !== null
             && $publisher?->status === 'active'
             && $publisher->user?->status === 'active';
     }

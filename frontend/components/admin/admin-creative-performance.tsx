@@ -33,3 +33,6 @@ export function CreativeMetrics({ data }: { data: CreativeDetail }) {
   return <div className={"grid gap-4 sm:grid-cols-2 " + (data.can_view_money ? "xl:grid-cols-4" : "xl:grid-cols-3")}>{cards.map(card => <div key={card.label} className="min-h-[122px] rounded-lg border bg-card p-5"><p className="text-xs text-muted-foreground">{card.label}</p><p className={"mt-3 font-semibold tabular-nums " + (card.label === "Last served" ? "text-lg" : "text-2xl")}>{card.value}</p>{card.caption && <p className="mt-2 text-xs text-muted-foreground">{card.caption}</p>}</div>)}</div>;
 }
 
+export function CreativeMetricCards({ cards }: { cards: { label: string; value: string; caption?: string }[] }) {
+  return <div className={"grid gap-4 sm:grid-cols-2 " + (cards.length === 4 ? "xl:grid-cols-4" : "xl:grid-cols-3")}>{cards.map(card => <div key={card.label} className="min-h-[122px] rounded-lg border bg-card p-5"><p className="text-xs text-muted-foreground">{card.label}</p><p className="mt-3 text-2xl font-semibold tabular-nums">{card.value}</p>{card.caption && <p className="mt-2 text-xs text-muted-foreground">{card.caption}</p>}</div>)}</div>;
+}

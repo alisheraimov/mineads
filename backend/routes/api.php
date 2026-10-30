@@ -3,6 +3,8 @@
 use App\Http\Controllers\Admin\CampaignController as AdminCampaignController;
 use App\Http\Controllers\Admin\CreativeController as AdminCreativeController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
+use App\Http\Controllers\Admin\PublisherController;
+use App\Http\Controllers\Admin\ServerController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Advertiser\BillingController;
 use App\Http\Controllers\Advertiser\CampaignController;
@@ -17,6 +19,13 @@ use App\Http\Controllers\Publisher\ServerController as PublisherServerController
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('admin')->middleware(['auth:sanctum', 'active', 'admin', 'verified'])->group(function () {
+    Route::get('/publishers', [PublisherController::class, 'index']);
+    Route::get('/servers', [ServerController::class, 'index']);
+    Route::get('/servers/{id}', [ServerController::class, 'show'])->whereNumber('id');
+    Route::get('/servers/{id}/activity', [ServerController::class, 'activity'])->whereNumber('id');
+    Route::get('/servers/{id}/history', [ServerController::class, 'history'])->whereNumber('id');
+    Route::post('/servers/{id}/moderate', [ServerController::class, 'moderate'])->whereNumber('id');
+    Route::delete('/servers/{id}', [ServerController::class, 'destroy'])->whereNumber('id');
     Route::get('/creatives', [AdminCreativeController::class, 'index']);
     Route::get('/creatives/options', [AdminCreativeController::class, 'options']);
     Route::get('/creatives/{id}', [AdminCreativeController::class, 'show'])->whereNumber('id');
@@ -100,6 +109,8 @@ Route::prefix('publisher')
         Route::get('/payouts', [PublisherPayoutController::class, 'show']);
         Route::get('/servers', [PublisherServerController::class, 'index']);
         Route::post('/servers', [PublisherServerController::class, 'store']);
+        Route::put('/servers/{server}', [PublisherServerController::class, 'update'])->whereNumber('server');
+        Route::post('/servers/{server}/resubmit', [PublisherServerController::class, 'resubmit'])->whereNumber('server');
         Route::get('/servers/{server}', [PublisherServerController::class, 'show'])->whereNumber('server');
         Route::get('/servers/{server}/performance', [PublisherServerController::class, 'performance'])->whereNumber('server');
         Route::post('/servers/{server}/setup-token', [PublisherServerController::class, 'regenerate'])->whereNumber('server');

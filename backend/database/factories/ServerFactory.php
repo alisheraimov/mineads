@@ -17,6 +17,8 @@ class ServerFactory extends Factory
             'host' => fake()->domainName(),
             'category' => fake()->randomElement(['survival', 'skyblock', 'minigames', 'factions']),
             'status' => 'active',
+            'review_status' => 'approved',
+            'legacy_approval' => true,
             'setup_token_hash' => Hash::make('setup_'.Str::random(32)),
             'setup_token_expires_at' => now()->addDay(),
             'activated_at' => now()->subDays(fake()->numberBetween(1, 30)),

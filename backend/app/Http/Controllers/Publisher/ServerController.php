@@ -8,6 +8,7 @@ use App\Models\PublisherAccount;
 use App\Models\Server;
 use App\Models\ValidatedImpression;
 use App\Services\ServerPerformanceService;
+use App\Services\ServerReviewService;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -55,6 +56,7 @@ class ServerController extends Controller
             PublisherAccount::query()->whereKey($publisher->id)->lockForUpdate()->firstOrFail();
             abort_if($publisher->servers()->where('host', $data['host'])->exists(), 422, 'A server with this host already exists in your workspace.');
             $server = $publisher->servers()->create([...$data, 'status' => 'pending']);
+            app(ServerReviewService::class)->record($server, $publisher->user, 'created');
 
             return $this->issueToken($server);
         });
@@ -85,6 +87,38 @@ class ServerController extends Controller
         ]]);
     }
 
+    public function update(StoreServerRequest $request, int $server): JsonResponse
+    {
+        DB::transaction(function () use ($request, $server): void {
+            $publisher = $this->publisher($request);
+            PublisherAccount::whereKey($publisher->id)->lockForUpdate()->firstOrFail();
+            $model = $this->ownedServer($request, $server, true);
+            abort_if($model->status === 'suspended', 403, 'Suspended servers cannot be edited.');
+            $input = $request->validated();
+            abort_if($publisher->servers()->where('host', $input['host'])->where('id', '!=', $server)->exists(), 422, 'A server with this host already exists in your workspace.');
+            $oldHost = $model->host;
+            $model->update($input);
+            if ($oldHost !== $model->host) {
+                app(ServerReviewService::class)->submit($model, $request->user(), 'host_changed', ['previous_host' => $oldHost]);
+            } else {
+                app(ServerReviewService::class)->record($model, $request->user(), 'updated');
+            }
+        }, 3);
+
+        return $this->show($request, $server);
+    }
+
+    public function resubmit(Request $request, int $server): JsonResponse
+    {
+        DB::transaction(function () use ($request, $server): void {
+            $model = $this->ownedServer($request, $server, true);
+            abort_unless($model->activated_at && $model->review_status === 'rejected' && $model->status !== 'suspended', 409, 'Only activated rejected servers can be resubmitted.');
+            app(ServerReviewService::class)->submit($model, $request->user(), 'resubmitted');
+        });
+
+        return $this->show($request, $server);
+    }
+
     public function performance(Request $request, int $server, ServerPerformanceService $performance): JsonResponse
     {
         $model = $this->ownedServer($request, $server);
@@ -106,6 +140,10 @@ class ServerController extends Controller
             abort_if($model->status === 'suspended', 403, 'Suspended servers cannot be reactivated.');
             $model->apiTokens()->whereNull('revoked_at')->update(['revoked_at' => now()]);
             $model->update(['status' => 'pending', 'activated_at' => null]);
+            if ($model->review_status === 'pending_review') {
+                $model->update(['review_status' => 'awaiting_activation', 'review_submitted_at' => null]);
+            }
+            app(ServerReviewService::class)->record($model, $request->user(), 'activation_reset');
 
             return $this->issueToken($model);
         });
@@ -120,6 +158,7 @@ class ServerController extends Controller
             $model = $this->ownedServer($request, $server, true);
             abort_if($model->status === 'suspended', 403, 'Suspended servers cannot be changed.');
             $model->update(['status' => $data['enabled'] ? ($model->activated_at ? 'active' : 'pending') : 'inactive']);
+            app(ServerReviewService::class)->record($model, $request->user(), $data['enabled'] ? 'enabled' : 'disabled');
         });
 
         return $this->show($request, $server);
@@ -135,6 +174,7 @@ class ServerController extends Controller
             $model->apiTokens()->whereNull('revoked_at')->update(['revoked_at' => now()]);
             $model->update(['status' => 'inactive', 'setup_token_hash' => null, 'setup_token_expires_at' => null]);
             $model->delete();
+            app(ServerReviewService::class)->record($model, $request->user(), 'deleted');
         });
 
         return response()->json(['message' => 'Server removed. Historical reports are preserved.']);
@@ -171,6 +211,8 @@ class ServerController extends Controller
         return [
             'id' => $server->id, 'name' => $server->name, 'host' => $server->host, 'category' => $server->category,
             'status' => $status, 'enabled' => $server->status !== 'inactive',
+            'review_status' => $server->review_status, 'review_reason' => $server->review_reason,
+            'legacy_approval' => $server->legacy_approval, 'suspension_reason' => $server->suspension_reason,
             'last_seen_at' => $heartbeat?->received_at?->toISOString(),
             'online_players' => $status === 'active' ? (int) ($heartbeat?->online_players ?? 0) : 0,
             'plugin_version' => $heartbeat?->plugin_version, 'minecraft_version' => $heartbeat?->minecraft_version,

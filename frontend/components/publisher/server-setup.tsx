@@ -28,7 +28,7 @@ export function ServerSetup({ setup, onActivated }: { setup: SetupResult; onActi
     return () => clearInterval(interval);
   }, [check, activated, expired]);
 
-  if (activated) return <section className={panelClass}><Check className="mb-4 size-8 text-emerald-600" /><h2 className="text-xl font-semibold">Your server is activated</h2><p className="my-3 text-sm text-muted-foreground">The plugin connection is ready. Connection health and performance are available in server details.</p><Button asChild><Link href={`/publisher/servers/${setup.server.id}`}>View server details</Link></Button></section>;
+  if (activated) return <section className={panelClass}><Check className="mb-4 size-8 text-emerald-600" /><h2 className="text-xl font-semibold">Your server is activated</h2><p className="my-3 text-sm text-muted-foreground">The plugin connection is ready. New servers must pass a moderator review before advertising can begin. Check server details for the review status.</p><Button asChild><Link href={`/publisher/servers/${setup.server.id}`}>View server details</Link></Button></section>;
   return <div className="grid gap-6 lg:grid-cols-[1.65fr_1fr]">
     <div className="space-y-6">
       <section className={panelClass}><h2 className="font-semibold">1. Download and install the plugin</h2><p className="my-4 text-sm text-muted-foreground">Install the MineAds plugin on your Minecraft server. The download and setup guide will be available later.</p><UnavailablePluginLinks /></section>

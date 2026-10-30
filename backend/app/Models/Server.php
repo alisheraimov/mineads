@@ -22,12 +22,17 @@ class Server extends Model
 
     protected $guarded = [];
 
+    protected $attributes = ['review_status' => 'awaiting_activation', 'legacy_approval' => false];
+
     protected function casts(): array
     {
         return [
             'setup_token_expires_at' => 'datetime',
             'activated_at' => 'datetime',
             'last_seen_at' => 'datetime',
+            'review_submitted_at' => 'datetime',
+            'reviewed_at' => 'datetime',
+            'legacy_approval' => 'boolean',
         ];
     }
 
