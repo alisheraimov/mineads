@@ -3,9 +3,11 @@
 namespace App\Services;
 
 use App\Models\Payout;
+use App\Models\PayoutEvent;
 use App\Models\PublisherAccount;
 use App\Models\PublisherLedgerEntry;
 use App\Models\Server;
+use App\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
@@ -13,7 +15,7 @@ use Illuminate\Support\Facades\DB;
 
 class PublisherPayoutService
 {
-    public function __construct(private readonly PublisherBalanceService $balances) {}
+    public function __construct(private readonly PublisherBalanceService $balances, private readonly PayoutReservationService $reservations) {}
 
     /**
      * @return array{settled_entries: int, created_payouts: int}
@@ -30,7 +32,7 @@ class PublisherPayoutService
 
         $totals = ['settled_entries' => 0, 'created_payouts' => 0];
 
-        PublisherAccount::query()->where('status', 'active')
+        PublisherAccount::query()->where('status', 'active')->where('currency', 'USD')
             ->chunkById(100, function (Collection $publishers) use ($now, $cycleMonth, &$totals): void {
                 foreach ($publishers as $publisher) {
                     $result = $this->preparePublisher($publisher->id, $cycleMonth, $now);
@@ -48,9 +50,11 @@ class PublisherPayoutService
     private function preparePublisher(int $publisherId, CarbonImmutable $cycleMonth, CarbonImmutable $now): array
     {
         return DB::transaction(function () use ($publisherId, $cycleMonth, $now): array {
+            $userId = PublisherAccount::query()->whereKey($publisherId)->value('user_id');
+            $user = User::withTrashed()->lockForUpdate()->find($userId);
             $publisher = PublisherAccount::query()->lockForUpdate()->find($publisherId);
 
-            if (! $publisher || $publisher->status !== 'active') {
+            if (! $publisher || ! $user || $user->trashed() || $user->status !== 'active' || $publisher->status !== 'active') {
                 return ['settled_entries' => 0, 'created_payouts' => 0];
             }
 
@@ -71,32 +75,33 @@ class PublisherPayoutService
 
             $result = ['settled_entries' => $settled, 'created_payouts' => 0];
 
-            if ($suspendedServerIds !== []) {
-                return $result;
-            }
-
             if (Payout::query()->where('publisher_account_id', $publisher->id)
                 ->where('currency', $publisher->currency)
                 ->where('cycle_month', $cycleMonth->toDateString())->exists()) {
                 return $result;
             }
 
-            $available = $this->balances->availableMicros($publisher);
+            $available = intdiv(max(0, $this->balances->rawAvailableMicros($publisher)), 10000) * 10000;
             $minimum = max(0, (int) config('publisher.minimum_payout_micros', 50000000));
 
             if ($available <= 0 || $available < $minimum) {
                 return $result;
             }
 
-            Payout::query()->create([
+            $payout = Payout::query()->create([
                 'publisher_account_id' => $publisher->id,
                 'currency' => $publisher->currency,
                 'status' => 'pending',
                 'amount_micros' => $available,
-                'provider' => 'stripe',
+                'provider' => 'manual',
                 'cycle_month' => $cycleMonth->toDateString(),
                 'period_start' => $cycleMonth->subMonth(),
                 'period_end' => $cycleMonth->subSecond(),
+            ]);
+            $this->reservations->reserve($payout, $publisher);
+            PayoutEvent::query()->create([
+                'payout_id' => $payout->id, 'actor_name' => 'System', 'action' => 'created',
+                'details' => ['to' => 'pending', 'amount_micros' => $available, 'currency' => $publisher->currency],
             ]);
 
             $result['created_payouts'] = 1;

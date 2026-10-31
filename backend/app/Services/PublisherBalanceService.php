@@ -10,6 +10,11 @@ class PublisherBalanceService
 {
     public function availableMicros(PublisherAccount $publisher): int
     {
+        return max(0, $this->rawAvailableMicros($publisher));
+    }
+
+    public function rawAvailableMicros(PublisherAccount $publisher): int
+    {
         $payable = (int) PublisherLedgerEntry::query()
             ->where('publisher_account_id', $publisher->id)
             ->where('currency', $publisher->currency)
@@ -19,6 +24,6 @@ class PublisherBalanceService
             ->where('currency', $publisher->currency)
             ->whereIn('status', ['pending', 'processing', 'paid'])->sum('amount_micros');
 
-        return max(0, $payable - $committed);
+        return $payable - $committed;
     }
 }

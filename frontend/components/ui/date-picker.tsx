@@ -94,14 +94,17 @@ export function DateRangePicker({
   label,
   value,
   onChange,
+  max,
 }: {
   id: string;
   label: string;
   value: { from: string; to: string };
   onChange: (value: { from: string; to: string }) => void;
+  max?: string;
 }) {
   const from = calendarDate(value.from);
   const to = calendarDate(value.to);
+  const latest = calendarDate(max);
   return (
     <Popover>
       <PopoverTrigger asChild>
@@ -117,7 +120,7 @@ export function DateRangePicker({
           <span id={`${id}-value`} className="truncate">
             {from
               ? `${format(from, "d MMM yyyy")}${to ? ` - ${format(to, "d MMM yyyy")}` : " - Select end date"}`
-              : "Pick a date range"}
+              : to ? `Through ${format(to, "d MMM yyyy")}` : "Pick a date range"}
           </span>
         </Button>
       </PopoverTrigger>
@@ -128,9 +131,10 @@ export function DateRangePicker({
         <Calendar
           mode="range"
           selected={from ? { from, to } : undefined}
-          defaultMonth={from}
+          defaultMonth={from ?? to}
           numberOfMonths={2}
           max={365}
+          disabled={latest ? { after: latest } : undefined}
           autoFocus
           onSelect={(range) =>
             onChange({

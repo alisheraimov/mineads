@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admin\CampaignController as AdminCampaignController;
 use App\Http\Controllers\Admin\CreativeController as AdminCreativeController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
+use App\Http\Controllers\Admin\FinanceController;
 use App\Http\Controllers\Admin\PublisherController;
 use App\Http\Controllers\Admin\ServerController;
 use App\Http\Controllers\Admin\UserController;
@@ -19,6 +20,14 @@ use App\Http\Controllers\Publisher\ServerController as PublisherServerController
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('admin')->middleware(['auth:sanctum', 'active', 'admin', 'verified'])->group(function () {
+    Route::get('/finance', [FinanceController::class, 'overview']);
+    Route::get('/finance/options', [FinanceController::class, 'options']);
+    Route::get('/finance/ledgers/{kind}', [FinanceController::class, 'ledger'])->whereIn('kind', ['advertiser', 'publisher']);
+    Route::get('/finance/ledgers/{kind}/{export}', [FinanceController::class, 'ledger'])->whereIn('kind', ['advertiser', 'publisher'])->where('export', 'export');
+    Route::get('/finance/payouts', [FinanceController::class, 'payouts']);
+    Route::get('/finance/payouts/{export}', [FinanceController::class, 'payouts'])->where('export', 'export');
+    Route::get('/finance/payouts/{id}', [FinanceController::class, 'show'])->whereNumber('id');
+    Route::post('/finance/payouts/{id}/actions', [FinanceController::class, 'action'])->whereNumber('id')->middleware('throttle:30,1');
     Route::get('/publishers', [PublisherController::class, 'index']);
     Route::get('/servers', [ServerController::class, 'index']);
     Route::get('/servers/{id}', [ServerController::class, 'show'])->whereNumber('id');

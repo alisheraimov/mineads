@@ -1,6 +1,6 @@
 import { apiRequest, getToken } from "@/lib/auth";
 
-export const payoutStatuses = ["pending", "processing", "paid", "failed", "cancelled"] as const;
+export const payoutStatuses = ["pending", "failed", "paid", "cancelled"] as const;
 export type PayoutStatus = typeof payoutStatuses[number];
 export type PayoutsData = {
   account: { name: string; currency: string; status: string };

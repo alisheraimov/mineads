@@ -187,11 +187,10 @@ class PublisherPayoutPreparationTest extends TestCase
 
         $this->assertDatabaseHas('publisher_ledger_entries', ['id' => $suspendedEarning->id, 'type' => 'pending_earning', 'settled_at' => null]);
         $this->assertDatabaseHas('publisher_ledger_entries', ['id' => $foreignEarning->id, 'type' => 'pending_earning', 'settled_at' => null]);
-        $this->assertDatabaseCount('payouts', 1);
-        $this->assertDatabaseHas('payouts', ['publisher_account_id' => $publisher->id, 'currency' => 'EUR', 'amount_micros' => 55000000]);
+        $this->assertDatabaseCount('payouts', 0);
     }
 
-    public function test_suspended_server_earnings_remain_pending_while_other_earnings_settle_and_payout_is_held(): void
+    public function test_suspended_server_earnings_remain_pending_while_other_earnings_are_paid(): void
     {
         $publisher = PublisherAccount::factory()->create();
         $suspended = Server::factory()->create(['publisher_account_id' => $publisher->id, 'status' => 'suspended']);
@@ -201,15 +200,16 @@ class PublisherPayoutPreparationTest extends TestCase
         $accountEarning = $this->earning($publisher, 10000000, '2026-09-01 00:00:00');
 
         $this->artisan('publishers:prepare-payouts')
-            ->expectsOutput('Settled 2 ledger entries; created 0 pending payouts.')->assertSuccessful();
+            ->expectsOutput('Settled 2 ledger entries; created 1 pending payouts.')->assertSuccessful();
 
         $this->assertDatabaseHas('publisher_ledger_entries', ['id' => $held->id, 'type' => 'pending_earning', 'settled_at' => null]);
         $this->assertDatabaseHas('publisher_ledger_entries', ['id' => $eligible->id, 'type' => 'payable', 'settled_at' => '2026-10-05 00:10:00']);
         $this->assertDatabaseHas('publisher_ledger_entries', ['id' => $accountEarning->id, 'type' => 'payable']);
-        $this->assertDatabaseCount('payouts', 0);
+        $this->assertDatabaseCount('payouts', 1);
+        $this->assertDatabaseHas('payouts', ['publisher_account_id' => $publisher->id, 'amount_micros' => 70000000]);
     }
 
-    public function test_suspension_holds_previously_settled_earnings_even_without_earnings_on_that_server(): void
+    public function test_server_suspension_does_not_hold_released_earnings_or_change_existing_payouts(): void
     {
         $publisher = PublisherAccount::factory()->create();
         Server::factory()->create(['publisher_account_id' => $publisher->id, 'status' => 'suspended']);
@@ -218,8 +218,9 @@ class PublisherPayoutPreparationTest extends TestCase
 
         $this->artisan('publishers:prepare-payouts')->assertSuccessful();
 
-        $this->assertDatabaseCount('payouts', 1);
+        $this->assertDatabaseCount('payouts', 2);
         $this->assertDatabaseHas('payouts', ['id' => $existing->id, 'status' => 'pending', 'amount_micros' => 1000000]);
+        $this->assertDatabaseHas('payouts', ['publisher_account_id' => $publisher->id, 'amount_micros' => 59000000]);
     }
 
     public function test_clearing_the_last_suspension_releases_earnings_and_payout_on_the_next_run(): void
@@ -260,7 +261,7 @@ class PublisherPayoutPreparationTest extends TestCase
         $this->assertDatabaseHas('payouts', ['publisher_account_id' => $publisher->id, 'amount_micros' => 60000000]);
     }
 
-    public function test_soft_deleted_suspended_servers_still_hold_settlement_and_payouts(): void
+    public function test_deleted_suspended_servers_keep_only_their_unsettled_earnings_held(): void
     {
         $publisher = PublisherAccount::factory()->create();
         $server = Server::factory()->create(['publisher_account_id' => $publisher->id, 'status' => 'suspended']);
@@ -271,7 +272,8 @@ class PublisherPayoutPreparationTest extends TestCase
         $this->artisan('publishers:prepare-payouts')->assertSuccessful();
 
         $this->assertDatabaseHas('publisher_ledger_entries', ['id' => $held->id, 'type' => 'pending_earning', 'settled_at' => null]);
-        $this->assertDatabaseCount('payouts', 0);
+        $this->assertDatabaseCount('payouts', 1);
+        $this->assertDatabaseHas('payouts', ['publisher_account_id' => $publisher->id, 'amount_micros' => 60000000]);
     }
 
     #[TestWith([25000000, 25000000, 1])]

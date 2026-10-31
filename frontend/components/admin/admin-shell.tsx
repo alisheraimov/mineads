@@ -47,6 +47,7 @@ export function AdminShell({ children, requiredPermission = "admin.users.view" }
               {adminCan(user, "admin.servers.view") && <><Link href="/admin/publishers">Publishers</Link><Link href="/admin/servers">Servers</Link></>}
               {adminCan(user, "admin.campaigns.view") && <Link href="/admin/campaigns">Campaigns</Link>}
               {(adminCan(user, "admin.creatives.view") || adminCan(user, "admin.creatives.review")) && <Link href="/admin/creatives">Creatives</Link>}
+              {adminCan(user, "admin.finance.view") && <Link href="/admin/finance">Finance</Link>}
             </nav>
             {children}
           </div>

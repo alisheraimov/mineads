@@ -21,7 +21,7 @@ class PayoutController extends Controller
         $input = $request->validate([
             'page' => ['nullable', 'integer', 'min:1', 'max:1000000'],
             'year' => ['nullable', 'integer', 'min:2000', 'max:9999'],
-            'status' => ['nullable', Rule::in(['pending', 'processing', 'paid', 'failed', 'cancelled'])],
+            'status' => ['nullable', Rule::in(['pending', 'paid', 'failed', 'cancelled'])],
         ]);
         $now = CarbonImmutable::now('UTC');
         $query = Payout::query()->where('publisher_account_id', $publisher->id)->where('currency', $publisher->currency);

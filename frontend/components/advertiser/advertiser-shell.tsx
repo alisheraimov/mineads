@@ -126,7 +126,7 @@ export function AdvertiserHeader({
   return <AccountHeader user={user} onLogout={onLogout} showNotifications />;
 }
 
-export function AdvertiserSidebar({ balance, workspace = "advertiser", onComingSoon, user }: {
+export function AdvertiserSidebar({ balance, workspace = "advertiser", user }: {
   balance: number;
   workspace?: "advertiser" | "admin";
   onComingSoon?: (section: string) => void;
@@ -160,18 +160,14 @@ export function AdvertiserSidebar({ balance, workspace = "advertiser", onComingS
           {(!user || adminCan(user, "admin.analytics.view")) && <SidebarLink label="Overview" href="/admin" icon={LayoutDashboard} active={pathname === "/admin"} />}
           {(!user || adminCan(user, "admin.users.view")) && <SidebarLink label="Users & accounts" href="/admin/users" icon={Users} active={pathname.startsWith("/admin/users")} />}
           {user && !adminCan(user, "admin.users.view") && adminCan(user, "admin.servers.view") && <p className="px-2 py-2 text-sm text-sidebar-foreground">Users & accounts</p>}
-          {(!user || adminCan(user, "admin.servers.view")) && <div className="pl-6"><SidebarLink label="Publishers" href="/admin/publishers" icon={Users} active={pathname.startsWith("/admin/publishers")} /></div>}
+          {(!user || adminCan(user, "admin.servers.view")) && <div className="ml-4 space-y-1 border-l border-sidebar-border pl-3"><Link href="/admin/publishers" aria-current={pathname.startsWith("/admin/publishers") ? "page" : undefined} className={cn("flex min-h-9 items-center rounded-md px-3 text-sm hover:bg-sidebar-accent", pathname.startsWith("/admin/publishers") && "bg-sidebar-foreground/[0.06] text-sidebar-accent-foreground hover:bg-sidebar-foreground/[0.06] dark:bg-sidebar-foreground/10 dark:hover:bg-sidebar-foreground/10")}>Publishers</Link></div>}
           {(!user || adminCan(user, "admin.campaigns.view")) && <SidebarLink label="Campaigns" href="/admin/campaigns" icon={Megaphone} active={pathname.startsWith("/admin/campaigns")} />}
           {(!user || adminCan(user, "admin.creatives.view") || adminCan(user, "admin.creatives.review")) && <SidebarLink label="Creatives" href="/admin/creatives" icon={Sparkles} active={pathname.startsWith("/admin/creatives")} />}
           {(!user || adminCan(user, "admin.servers.view")) && <SidebarLink label="Servers" href="/admin/servers" icon={Server} active={pathname.startsWith("/admin/servers")} />}
-          {[
-            { label: "Finance", icon: Wallet, permission: "admin.finance.view" },
-          ].filter(item => !user || adminCan(user, item.permission)).map(({ label, icon: Icon }) => (
-            <Button key={label} variant="ghost" className="h-9 w-full justify-start px-2 font-normal" onClick={() => onComingSoon?.(label)} aria-label={label + " (coming soon)"}>
-              <Icon aria-hidden="true" />{label}
-            </Button>
-          ))}
-          <p className="px-2 pt-3 text-xs text-muted-foreground">More sections coming soon</p>
+          {(!user || adminCan(user, "admin.finance.view")) && <div>
+            <div id="admin-finance-label" className="flex h-9 items-center gap-2 px-2 text-sm font-normal"><SidebarIcon icon={Wallet} active={pathname.startsWith("/admin/finance")} />Finance</div>
+            <div id="admin-finance-navigation" role="group" aria-labelledby="admin-finance-label" className="ml-4 space-y-1 border-l border-sidebar-border pl-3">{[{label:"Overview",href:"/admin/finance"},{label:"Advertiser ledger",href:"/admin/finance/advertiser-ledger"},{label:"Publisher ledger",href:"/admin/finance/publisher-ledger"},{label:"Payouts",href:"/admin/finance/payouts"}].map(item => <Link key={item.href} href={item.href} aria-current={(item.href === "/admin/finance" ? pathname === item.href : pathname.startsWith(item.href)) ? "page" : undefined} className={cn("flex min-h-9 items-center rounded-md px-3 text-sm hover:bg-sidebar-accent", (item.href === "/admin/finance" ? pathname === item.href : pathname.startsWith(item.href)) && "bg-sidebar-foreground/[0.06] text-sidebar-accent-foreground hover:bg-sidebar-foreground/[0.06] dark:bg-sidebar-foreground/10 dark:hover:bg-sidebar-foreground/10")}>{item.label}</Link>)}</div>
+          </div>}
         </> : navItems.map((item) => (
           <SidebarLink
             key={item.label}
@@ -222,6 +218,16 @@ export function AdvertiserSidebar({ balance, workspace = "advertiser", onComingS
   );
 }
 
+function SidebarIcon({ icon: Icon, active = false }: {
+  icon: React.ComponentType<{ className?: string; "aria-hidden"?: boolean }>;
+  active?: boolean;
+}) {
+  return <span className={cn(
+    "flex size-6 shrink-0 items-center justify-center rounded-md bg-sidebar-foreground/5 text-sidebar-foreground/70 transition-colors",
+    active && "bg-background text-sidebar-accent-foreground shadow-sm ring-1 ring-sidebar-border/60",
+  )}><Icon className="size-4" aria-hidden={true} /></span>;
+}
+
 function SidebarLink({
   label,
   href,
@@ -239,10 +245,10 @@ function SidebarLink({
       aria-current={active ? "page" : undefined}
       className={cn(
         "flex h-9 items-center gap-2 rounded-md px-2 text-sm text-sidebar-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-        active && "bg-sidebar-accent text-sidebar-accent-foreground",
+        active && "bg-sidebar-foreground/[0.06] text-sidebar-accent-foreground hover:bg-sidebar-foreground/[0.06] dark:bg-sidebar-foreground/10 dark:hover:bg-sidebar-foreground/10",
       )}
     >
-      <Icon className="size-4" aria-hidden={true} />
+      <SidebarIcon icon={Icon} active={active} />
       <span className="truncate">{label}</span>
     </Link>
   );
