@@ -203,7 +203,6 @@ class AuthController extends Controller
     {
         $data = $request->validate([
             'role' => ['required', Rule::in(['advertiser', 'publisher'])],
-            'account_name' => ['nullable', 'string', 'max:255'],
         ]);
 
         $user = $request->user()->load(['advertiserAccount', 'publisherAccount']);
@@ -223,7 +222,7 @@ class AuthController extends Controller
         }
 
         $user->forceFill(['role' => $data['role']])->save();
-        $this->createCommercialAccount($user, $data['role'], $data['account_name'] ?? null);
+        $this->createCommercialAccount($user, $data['role']);
 
         return response()->json([
             'user' => UserResource::make($user->fresh(['advertiserAccount', 'publisherAccount'])),
@@ -238,13 +237,10 @@ class AuthController extends Controller
         ], $status);
     }
 
-    private function createCommercialAccount(User $user, string $role, ?string $accountName = null): void
+    private function createCommercialAccount(User $user, string $role): void
     {
-        $name = $accountName ?: $user->name;
-
         if ($role === 'advertiser') {
             $user->advertiserAccount()->firstOrCreate([], [
-                'name' => $name,
                 'status' => 'active',
             ]);
 
@@ -252,7 +248,6 @@ class AuthController extends Controller
         }
 
         $user->publisherAccount()->firstOrCreate([], [
-            'name' => $name,
             'status' => 'active',
         ]);
     }

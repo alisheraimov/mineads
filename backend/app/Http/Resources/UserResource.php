@@ -29,12 +29,12 @@ class UserResource extends JsonResource
                 : [],
             'advertiser_account' => $this->whenLoaded('advertiserAccount', fn () => $this->advertiserAccount ? [
                 'id' => $this->advertiserAccount->id,
-                'name' => $this->advertiserAccount->name,
+                'name' => $this->name,
                 'status' => $this->advertiserAccount->status,
             ] : null),
             'publisher_account' => $this->whenLoaded('publisherAccount', fn () => $this->publisherAccount ? [
                 'id' => $this->publisherAccount->id,
-                'name' => $this->publisherAccount->name,
+                'name' => $this->name,
                 'status' => $this->publisherAccount->status,
             ] : null),
         ];

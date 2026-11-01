@@ -11,7 +11,6 @@ class AdvertiserAccountFactory extends Factory
     {
         return [
             'user_id' => User::factory()->state(['role' => 'advertiser']),
-            'name' => fake()->company(),
             'status' => 'active',
         ];
     }

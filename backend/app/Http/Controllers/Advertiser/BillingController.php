@@ -23,6 +23,7 @@ class BillingController extends Controller
         $total = count($snapshot['months']);
         $snapshot['months'] = array_slice($snapshot['months'], ($page - 1) * 12, 12);
         $snapshot['pagination'] = ['page' => $page, 'last_page' => max(1, (int) ceil($total / 12)), 'total' => $total];
+        $snapshot['account']['name'] = $request->user()->name;
 
         return response()->json(['data' => $snapshot]);
     }
@@ -55,7 +56,7 @@ class BillingController extends Controller
         $current = collect($months)->firstWhere('is_current', true);
 
         return [
-            'account' => ['name' => $account->name, 'status' => $account->status],
+            'account' => ['status' => $account->status],
             'metrics' => ['available_balance_micros' => $balance, 'funds_added_month_micros' => $current['funds_added_micros'],
                 'spend_month_micros' => $current['spend_micros'],
                 'impressions_month' => ValidatedImpression::query()->where('advertiser_account_id', $account->id)->whereBetween('validated_at', [$currentMonth, $now->endOfMonth()])->count()],

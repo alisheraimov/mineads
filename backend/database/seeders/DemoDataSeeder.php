@@ -48,7 +48,7 @@ class DemoDataSeeder extends Seeder
 
             return AdvertiserAccount::query()->firstOrCreate(
                 ['user_id' => $user->id],
-                ['name' => $advertiser['name'], 'status' => 'active'],
+                ['status' => 'active'],
             );
         });
 
@@ -63,7 +63,7 @@ class DemoDataSeeder extends Seeder
 
             return PublisherAccount::query()->firstOrCreate(
                 ['user_id' => $user->id],
-                ['name' => $publisher['name'], 'status' => 'active'],
+                ['status' => 'active'],
             );
         });
 

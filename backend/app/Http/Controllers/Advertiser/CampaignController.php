@@ -75,12 +75,11 @@ class CampaignController extends Controller
                 })->all(),
                 'counts' => ['all' => $counts->sum(), ...$counts->all()],
                 'pagination' => ['page' => $page->currentPage(), 'last_page' => $page->lastPage(), 'total' => $page->total()],
-                'account_name' => $account->name,
                 'generated_at' => now()->toISOString(),
             ];
         });
 
-        return response()->json(['data' => $data]);
+        return response()->json(['data' => [...$data, 'account_name' => $request->user()->name]]);
     }
 
     public function show(Request $request, int $campaign): JsonResponse
@@ -96,7 +95,9 @@ class CampaignController extends Controller
         abort_if($end->lessThan($start) || $start->diffInDays($end) > 366, 422, 'Choose a date range of up to 366 days.');
         $key = $this->cachePrefix($account).":detail:v2:{$campaign}:{$start->toDateString()}:{$end->toDateString()}";
 
-        return response()->json(['data' => Cache::remember($key, 30, fn () => $this->details($account, $model, $start, $end))]);
+        $data = Cache::remember($key, 30, fn () => $this->details($account, $model, $start, $end));
+
+        return response()->json(['data' => [...$data, 'account_name' => $request->user()->name]]);
     }
 
     public function store(SaveCampaignRequest $request): JsonResponse
@@ -234,7 +235,6 @@ class CampaignController extends Controller
         }
 
         return [...$this->basic($campaign),
-            'account_name' => $account->name,
             'countries' => $campaign->targets->pluck('country_code')->filter()->unique()->values()->all(),
             'languages' => $campaign->targets->pluck('language')->filter()->unique()->values()->all(),
             'server_categories' => $campaign->targets->pluck('server_category')->filter()->unique()->values()->all(),

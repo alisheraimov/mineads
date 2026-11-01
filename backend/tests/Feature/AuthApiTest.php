@@ -61,7 +61,7 @@ class AuthApiTest extends TestCase
             ->assertJsonPath('user.advertiser_account', null);
 
         $this->assertDatabaseHas('publisher_accounts', [
-            'name' => 'Server Network',
+            'user_id' => $user->id,
             'status' => 'active',
         ]);
         $this->assertDatabaseCount('advertiser_accounts', 0);

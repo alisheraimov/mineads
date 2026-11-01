@@ -11,7 +11,6 @@ class PublisherAccountFactory extends Factory
     {
         return [
             'user_id' => User::factory()->state(['role' => 'publisher']),
-            'name' => fake()->company(),
             'status' => 'active',
         ];
     }

@@ -36,6 +36,8 @@ class DashboardController extends Controller
             fn (): array => $this->dashboardPayload($advertiser),
         );
 
+        $payload['account']['name'] = $request->user()->name;
+
         return response()->json(['data' => $payload]);
     }
 
@@ -58,7 +60,6 @@ class DashboardController extends Controller
         return [
             'account' => [
                 'id' => $advertiser->id,
-                'name' => $advertiser->name,
                 'status' => $advertiser->status,
             ],
             'period' => [

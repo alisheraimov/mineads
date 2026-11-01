@@ -46,7 +46,7 @@ class PayoutController extends Controller
             ->paginate(12, ['*'], 'page', (int) ($input['page'] ?? 1));
 
         return response()->json(['data' => [
-            'account' => $publisher->only(['name', 'status']),
+            'account' => ['name' => $request->user()->name, 'status' => $publisher->status],
             'metrics' => [
                 'available_payout_micros' => $available,
                 'pending_earnings_micros' => max(0, $pending),

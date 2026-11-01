@@ -38,7 +38,7 @@ class AdvertiserDashboardSeeder extends Seeder
 
         $advertiser = AdvertiserAccount::query()->updateOrCreate(
             ['user_id' => $user->id],
-            ['name' => 'RealmCraft', 'status' => 'active'],
+            ['status' => 'active'],
         );
 
         $publisherUser = User::query()->updateOrCreate(
@@ -54,7 +54,7 @@ class AdvertiserDashboardSeeder extends Seeder
 
         $publisher = PublisherAccount::query()->updateOrCreate(
             ['user_id' => $publisherUser->id],
-            ['name' => 'Emerald Network', 'status' => 'active'],
+            ['status' => 'active'],
         );
 
         $server = Server::query()->updateOrCreate(

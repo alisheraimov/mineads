@@ -226,6 +226,7 @@ components:
                 name:
                   type: string
                   example: RealmCraft
+                  description: Display name from the owning user; accounts have no separate name.
                 status:
                   type: string
                   example: active
