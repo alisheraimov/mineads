@@ -3,7 +3,7 @@ import { apiRequest, getToken } from "@/lib/auth";
 export type CampaignAdvertiser = { id: number; name: string; email: string; status?: string };
 export type PageMeta = { current_page: number; last_page: number; total: number; from?: number | null; to?: number | null };
 export type AdminCampaign = {
-  id: number; name: string; status: string; pricing_model: string; currency: string;
+  id: number; name: string; status: string;
   advertiser: CampaignAdvertiser | null; starts_at: string | null; ends_at: string | null;
   created_at: string; updated_at: string; deleted_at: string | null;
   daily_budget_micros?: number | null; total_budget_micros?: number | null;

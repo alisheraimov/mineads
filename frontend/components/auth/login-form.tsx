@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
+import { useRouter } from "@/lib/navigation";
 import { FormEvent, useState } from "react";
 import { Loader2 } from "lucide-react";
 
@@ -10,7 +11,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PrimaryButton } from "@/components/ui/primary-button";
-import { startRouteProgress } from "@/components/ui/route-progress";
 import { adminHome, getCurrentUser, googleRedirectUrl, login, setToken } from "@/lib/auth";
 
 export function LoginForm() {
@@ -30,7 +30,6 @@ export function LoginForm() {
       const response = await login({ email, password });
       setToken(response.token);
       const currentUser = await getCurrentUser();
-      startRouteProgress();
 
       if (currentUser.data.status === "suspended") {
         router.push("/account-suspended");

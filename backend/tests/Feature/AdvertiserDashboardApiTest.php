@@ -27,6 +27,7 @@ class AdvertiserDashboardApiTest extends TestCase
 
     public function test_advertiser_can_view_dashboard_aggregates(): void
     {
+        $this->travelTo(now()->setDate(2026, 10, 15)->setTime(12, 0));
         $user = User::factory()->create(['role' => 'advertiser']);
         $advertiser = AdvertiserAccount::factory()->create([
             'user_id' => $user->id,

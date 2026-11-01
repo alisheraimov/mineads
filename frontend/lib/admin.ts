@@ -10,7 +10,7 @@ export type AdminSnapshot = {
   offline_servers: number;
   high_invalid_rate_servers: number;
   pending_payouts: number;
-  pending_payout_amounts: { currency: string; amount_micros: number }[];
+  pending_payout_micros: number;
   health_rules: {
     heartbeat_timeout_seconds: number;
     invalid_rate_percent: number;
@@ -22,7 +22,6 @@ export type AdminSnapshot = {
 export type AdminPeriod = "today" | "yesterday" | "last7" | "last30" | "custom";
 export type AdminPerformance = {
   period: { key: AdminPeriod; from: string; to: string; timezone: string; interval: "hour" | "day" };
-  currency: string;
   metrics: {
     reported_impressions: number;
     validated_impressions: number;

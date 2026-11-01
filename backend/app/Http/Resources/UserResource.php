@@ -31,13 +31,11 @@ class UserResource extends JsonResource
                 'id' => $this->advertiserAccount->id,
                 'name' => $this->advertiserAccount->name,
                 'status' => $this->advertiserAccount->status,
-                'currency' => $this->advertiserAccount->currency,
             ] : null),
             'publisher_account' => $this->whenLoaded('publisherAccount', fn () => $this->publisherAccount ? [
                 'id' => $this->publisherAccount->id,
                 'name' => $this->publisherAccount->name,
                 'status' => $this->publisherAccount->status,
-                'currency' => $this->publisherAccount->currency,
             ] : null),
         ];
     }

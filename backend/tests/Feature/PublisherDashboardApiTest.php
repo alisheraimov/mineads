@@ -93,12 +93,10 @@ class PublisherDashboardApiTest extends TestCase
             ]);
         }
         PublisherLedgerEntry::factory()->create(['type' => 'payable', 'amount_micros' => 999000000]);
-        PublisherLedgerEntry::factory()->create(['publisher_account_id' => $publisher->id, 'type' => 'payable', 'currency' => 'EUR', 'amount_micros' => 999000000]);
         foreach (['paid', 'processing', 'pending', 'failed', 'cancelled'] as $status) {
             Payout::factory()->create(['publisher_account_id' => $publisher->id, 'status' => $status, 'amount_micros' => 10000000]);
         }
         Payout::factory()->create(['status' => 'paid', 'amount_micros' => 999000000]);
-        Payout::factory()->create(['publisher_account_id' => $publisher->id, 'currency' => 'EUR', 'status' => 'paid', 'amount_micros' => 999000000]);
 
         $response = $this->actingAs($publisher->user)->getJson('/api/publisher/dashboard');
 

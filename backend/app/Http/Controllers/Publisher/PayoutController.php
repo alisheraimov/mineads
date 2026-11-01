@@ -24,12 +24,12 @@ class PayoutController extends Controller
             'status' => ['nullable', Rule::in(['pending', 'paid', 'failed', 'cancelled'])],
         ]);
         $now = CarbonImmutable::now('UTC');
-        $query = Payout::query()->where('publisher_account_id', $publisher->id)->where('currency', $publisher->currency);
+        $query = Payout::query()->where('publisher_account_id', $publisher->id);
         $years = (clone $query)->selectRaw('SUBSTR(CAST(period_start AS TEXT), 1, 4) as year')
             ->distinct()->orderByDesc('year')->pluck('year')->map(fn ($year): int => (int) $year)->all();
         $paid = (int) (clone $query)->where('status', 'paid')->sum('amount_micros');
         $pending = (int) PublisherLedgerEntry::query()->where('publisher_account_id', $publisher->id)
-            ->where('currency', $publisher->currency)->where('type', 'pending_earning')
+            ->where('type', 'pending_earning')
             ->whereBetween('created_at', [$now->startOfMonth(), $now])->sum('amount_micros');
         $available = $balances->availableMicros($publisher);
         $threshold = max(0, (int) config('publisher.minimum_payout_micros', 50000000));
@@ -46,7 +46,7 @@ class PayoutController extends Controller
             ->paginate(12, ['*'], 'page', (int) ($input['page'] ?? 1));
 
         return response()->json(['data' => [
-            'account' => $publisher->only(['name', 'currency', 'status']),
+            'account' => $publisher->only(['name', 'status']),
             'metrics' => [
                 'available_payout_micros' => $available,
                 'pending_earnings_micros' => max(0, $pending),
@@ -63,7 +63,7 @@ class PayoutController extends Controller
             'history' => $history->getCollection()->map(fn (Payout $payout): array => [
                 'id' => $payout->id, 'period_start' => $payout->period_start->toDateString(),
                 'period_end' => $payout->period_end->toDateString(), 'amount_micros' => (int) $payout->amount_micros,
-                'currency' => $payout->currency, 'status' => $payout->status, 'provider' => $payout->provider,
+                'status' => $payout->status, 'provider' => $payout->provider,
                 'created_at' => $payout->created_at->toISOString(),
                 'paid_at' => $payout->status === 'paid' ? $payout->paid_at?->toISOString() : null,
             ])->values(),

@@ -1,17 +1,19 @@
+import { formatUsd } from "@/lib/money";
+
 import { apiRequest, getToken, ApiError } from "@/lib/auth";
 import type { PageMeta } from "@/lib/admin-campaigns";
 
 export type FinancePermissions = { users: boolean; campaigns: boolean; servers: boolean; manage: boolean };
 export type FinanceIdentity = { id: number; name: string; deleted: boolean; status?: string };
 export type LedgerEntry = {
- id: number; type: string; amount_micros: number; currency: string; reference_type: string | null; reference_id: number | null; created_at: string;
+ id: number; type: string; amount_micros: number; reference_type: string | null; reference_id: number | null; created_at: string;
  account: FinanceIdentity; related: FinanceIdentity | null; settled_at: string | null; held: boolean;
 };
 export type LedgerResult = { data: LedgerEntry[]; summary: Record<string, number>; types: string[]; meta: PageMeta; permissions: FinancePermissions; generated_at: string };
 export const payoutStatuses = ["pending", "failed", "paid", "cancelled"] as const;
 export type PayoutStatus = typeof payoutStatuses[number];
 export type FinancePayout = {
- id: number; amount_micros: number; currency: string; status: PayoutStatus; period_start: string; period_end: string;
+ id: number; amount_micros: number; status: PayoutStatus; period_start: string; period_end: string;
  created_at: string; paid_at: string | null; version: number; provider: string; payment_method: string | null;
  external_reference: string | null; reason: string | null; internal_note: string | null; publisher: FinanceIdentity | null;
 };
@@ -45,7 +47,7 @@ export async function exportFinance(path: string, query: string) {
  document.body.appendChild(link); link.click(); link.remove(); setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 export function exactUsd(micros: number, signed = false) {
- return (signed && micros > 0 ? "+" : "") + new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 2, maximumFractionDigits: 6 }).format(micros / 1_000_000);
+ return (signed && micros > 0 ? "+" : "") + formatUsd(micros, { maximumFractionDigits: 6 });
 }
 export function financeLabel(value: string) { return ({ pending_earning: "Awaiting release", payable: "Released", bank_transfer: "Bank transfer", paypal: "PayPal" } as Record<string, string>)[value] ?? value.charAt(0).toUpperCase() + value.slice(1).replaceAll("_", " "); }
 export function financeTime(value: string) { return new Date(value).toLocaleString("en-US", { year: "numeric", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false, timeZone: "UTC" }) + " UTC"; }

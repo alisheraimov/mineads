@@ -5,6 +5,7 @@ info:
   description: >
     API contract for the MineAds backend. This initial specification documents
     the Plugin API used by Minecraft servers plus a basic health endpoint.
+    All monetary amounts use integer USD micros (1 USD = 1,000,000 micros).
 servers:
   - url: http://localhost:8000/api
     description: Local Docker Compose backend
@@ -217,7 +218,7 @@ components:
           properties:
             account:
               type: object
-              required: [id, name, status, currency]
+              required: [id, name, status]
               properties:
                 id:
                   type: integer
@@ -228,9 +229,6 @@ components:
                 status:
                   type: string
                   example: active
-                currency:
-                  type: string
-                  example: USD
             period:
               type: object
               required: [today_start, month_start, month_end]

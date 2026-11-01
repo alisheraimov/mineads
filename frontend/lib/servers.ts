@@ -16,7 +16,7 @@ export function resubmitServer(id: number) {
   return apiRequest<{ data: ServerDetail }>(`/publisher/servers/${id}/resubmit`, { token: getToken(), method: "POST" });
 }
 export type ServerDetail = ManagedServer & {
-  currency: string; created_at: string; activated_at: string | null;
+  created_at: string; activated_at: string | null;
   setup_token_expires_at: string | null; earnings_today_micros: number;
   earnings_month_micros: number; impressions_today: number; generated_at: string;
 };

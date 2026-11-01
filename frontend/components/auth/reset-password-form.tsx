@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
+import { useRouter } from "@/lib/navigation";
 import { FormEvent, useState } from "react";
 import { Loader2, LockKeyhole } from "lucide-react";
 
@@ -9,7 +10,6 @@ import { AuthError, AuthField, AuthForm, AuthIntro, AuthSubmit } from "@/compone
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PrimaryButton } from "@/components/ui/primary-button";
-import { startRouteProgress } from "@/components/ui/route-progress";
 import { resetPassword } from "@/lib/auth";
 
 export function ResetPasswordForm() {
@@ -32,7 +32,6 @@ export function ResetPasswordForm() {
         password,
         password_confirmation: passwordConfirmation,
       });
-      startRouteProgress();
       router.push("/password-reset-success");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to reset password.");

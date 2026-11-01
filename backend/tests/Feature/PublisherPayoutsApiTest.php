@@ -21,20 +21,17 @@ class PublisherPayoutsApiTest extends TestCase
         $this->travelTo(CarbonImmutable::parse('2026-10-16 12:00:00', 'UTC'));
     }
 
-    public function test_payout_summary_uses_owned_currency_scoped_records_and_does_not_move_balances(): void
+    public function test_payout_summary_uses_owned_usd_records_and_does_not_move_balances(): void
     {
         $publisher = PublisherAccount::factory()->create();
         $payable = PublisherLedgerEntry::factory()->create(['publisher_account_id' => $publisher->id, 'server_id' => null, 'type' => 'payable', 'amount_micros' => 120000000]);
         foreach ([['2026-10-01 00:00:00', 15000000], ['2026-09-30 23:59:59', 100000000], ['2026-10-16 12:00:01', 20000000]] as [$date, $amount]) {
             PublisherLedgerEntry::factory()->create(['publisher_account_id' => $publisher->id, 'server_id' => null, 'type' => 'pending_earning', 'created_at' => $date, 'amount_micros' => $amount]);
         }
-        PublisherLedgerEntry::factory()->create(['publisher_account_id' => $publisher->id, 'type' => 'payable', 'currency' => 'EUR', 'amount_micros' => 999000000]);
-        PublisherLedgerEntry::factory()->create(['publisher_account_id' => $publisher->id, 'type' => 'pending_earning', 'currency' => 'EUR', 'amount_micros' => 999000000]);
         PublisherLedgerEntry::factory()->create(['type' => 'payable', 'amount_micros' => 999000000]);
         foreach ([['paid', 20000000], ['pending', 10000000], ['processing', 5000000], ['failed', 4000000], ['cancelled', 3000000]] as [$status, $amount]) {
             Payout::factory()->create(['publisher_account_id' => $publisher->id, 'status' => $status, 'amount_micros' => $amount]);
         }
-        Payout::factory()->create(['publisher_account_id' => $publisher->id, 'currency' => 'EUR', 'status' => 'paid', 'amount_micros' => 999000000]);
         Payout::factory()->create(['status' => 'paid', 'amount_micros' => 999000000]);
 
         $response = $this->actingAs($publisher->user)->getJson('/api/publisher/payouts');
@@ -44,10 +41,11 @@ class PublisherPayoutsApiTest extends TestCase
             ->assertJsonPath('data.metrics.lifetime_paid_micros', 20000000)
             ->assertJsonPath('data.policy.threshold_met', true)->assertJsonPath('data.policy.minimum_payout_micros', 50000000)
             ->assertJsonCount(5, 'data.history')->assertJsonPath('data.pagination.total', 5)
+            ->assertJsonMissingPath('data.account.currency')->assertJsonMissingPath('data.history.0.currency')
             ->assertJsonPath('data.period.timezone', 'UTC');
         $this->assertSame(120000000, $payable->fresh()->amount_micros);
-        $this->assertDatabaseCount('payouts', 7);
-        $this->assertDatabaseCount('publisher_ledger_entries', 7);
+        $this->assertDatabaseCount('payouts', 6);
+        $this->assertDatabaseCount('publisher_ledger_entries', 5);
     }
 
     public function test_empty_state_reports_zero_balances_and_disabled_stripe_setup(): void

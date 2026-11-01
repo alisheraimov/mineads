@@ -1,8 +1,10 @@
 "use client";
 
+import { formatUsd as money } from "@/lib/money";
+
 import { useEffect, useState, type FormEvent } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/lib/navigation";
 import { ArrowRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -38,7 +40,6 @@ export function AdminUserDetails({ id }: {id:string}) {
   if(error && !user) return <div className="space-y-6"><UsersBreadcrumb /><Button asChild variant="outline"><Link href="/admin/users">Back to users</Link></Button><UsersError message={error} retry={()=>setAttempt(v=>v+1)} /></div>;
   if(!user) return <UsersLoading />;
   const account = user.account;
-  const money = (amount: number) => new Intl.NumberFormat("en-US",{style:"currency",currency:account?.currency ?? "USD"}).format(amount/1_000_000);
   const permissionGroups = new Map<string, string>();
   user.permissions.map(permissionLabel).forEach(({section,action}) => {
     if (!permissionGroups.has(section) || action !== "View") permissionGroups.set(section,action);
@@ -56,7 +57,7 @@ export function AdminUserDetails({ id }: {id:string}) {
       {user.role === "admin" ? <><UserPanel title="Admin access" description="This role controls which console sections the admin can use."><div className="flex items-center justify-between gap-4"><div><p className="mb-2 text-sm text-muted-foreground">Assigned role</p><Badge variant="secondary">{adminRoleLabels[user.admin_role ?? ""] ?? "Unassigned"}</Badge></div>{user.can_change_role && <Button variant="outline" onClick={()=>setAction("role")}>Change role</Button>}</div><div><h3 className="mb-3 text-sm font-medium">Included permissions</h3><ul className="space-y-3">{permissions.map(permission=><li key={permission.section} className="flex items-center justify-between gap-4 text-sm"><span>{permission.section}</span><Badge variant="secondary">{permission.action}</Badge></li>)}</ul>{!permissions.length && <p className="text-sm text-muted-foreground">No permissions assigned.</p>}</div><p className="text-xs leading-5 text-muted-foreground">{loaded?.roles.find(role=>role.value === user.admin_role)?.description}</p></UserPanel><UserPanel title="Commercial accounts" description="Admin accounts are created separately from advertiser and publisher accounts."><p className="text-sm text-muted-foreground">No advertiser or publisher accounts.</p></UserPanel></> : account ? <UserPanel title={roleLabel(account.type)+" account"}>
         {account.status !== "active" && <div className="rounded-md bg-muted p-4 text-sm"><p className="font-medium">{roleLabel(account.type)} account suspended</p><p className="mt-1 text-muted-foreground">Ad delivery is blocked for this account. This restriction is separate from user sign-in.</p></div>}
         <dl className="grid gap-6 sm:grid-cols-2">
-          {account.type === "advertiser" ? <><UserField label="Active campaigns">{account.active_campaigns}</UserField>{account.available_micros !== undefined && <UserField label="Available funds">{money(account.available_micros)}</UserField>}{account.lifetime_spend_micros !== undefined && <UserField label="Lifetime spend">{money(account.lifetime_spend_micros)}</UserField>}<UserField label="Currency">{account.currency}</UserField></> : <><UserField label="Servers">{account.servers} total · {account.active_servers} active</UserField>{account.lifetime_earnings_micros !== undefined && <UserField label="Lifetime earnings">{money(account.lifetime_earnings_micros)}</UserField>}{account.pending_micros !== undefined && <UserField label="Earnings awaiting release">{money(account.pending_micros)}</UserField>}{account.available_micros !== undefined && <UserField label="Available for payout">{money(account.available_micros)}</UserField>}</>}
+          {account.type === "advertiser" ? <><UserField label="Active campaigns">{account.active_campaigns}</UserField>{account.available_micros !== undefined && <UserField label="Available funds">{money(account.available_micros)}</UserField>}{account.lifetime_spend_micros !== undefined && <UserField label="Lifetime spend">{money(account.lifetime_spend_micros)}</UserField>}</> : <><UserField label="Servers">{account.servers} total · {account.active_servers} active</UserField>{account.lifetime_earnings_micros !== undefined && <UserField label="Lifetime earnings">{money(account.lifetime_earnings_micros)}</UserField>}{account.pending_micros !== undefined && <UserField label="Earnings awaiting release">{money(account.pending_micros)}</UserField>}{account.available_micros !== undefined && <UserField label="Available for payout">{money(account.available_micros)}</UserField>}</>}
         </dl>
         {!user.can_view_finance && <p className="text-xs text-muted-foreground">Financial totals are restricted for your role.</p>}
         <Button variant="outline" asChild>{account.type === "advertiser" ? <Link href={"/admin/campaigns?advertiser_id="+user.id}>View campaigns<ArrowRight className="size-4" aria-hidden="true" /></Link> : <Link href={"/admin/servers?publisher="+user.id}>View servers<ArrowRight className="size-4" aria-hidden="true" /></Link>}</Button>

@@ -3,11 +3,10 @@
 namespace Tests\Feature;
 
 use App\Models\AdvertiserAccount;
-use App\Models\PublisherAccount;
 use App\Models\User;
 use Database\Seeders\AdminPermissionSeeder;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Auth\Notifications\VerifyEmail;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
 use Tests\TestCase;
 
@@ -54,9 +53,11 @@ class AuthApiTest extends TestCase
         $this->withHeader('Authorization', 'Bearer '.$token)
             ->postJson('/api/auth/onboarding', [
                 'role' => 'publisher',
+                'currency' => 'EUR',
             ])->assertOk()
             ->assertJsonPath('user.role', 'publisher')
             ->assertJsonPath('user.publisher_account.name', 'Server Network')
+            ->assertJsonMissingPath('user.publisher_account.currency')
             ->assertJsonPath('user.advertiser_account', null);
 
         $this->assertDatabaseHas('publisher_accounts', [

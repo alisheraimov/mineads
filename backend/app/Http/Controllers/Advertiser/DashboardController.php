@@ -60,7 +60,6 @@ class DashboardController extends Controller
                 'id' => $advertiser->id,
                 'name' => $advertiser->name,
                 'status' => $advertiser->status,
-                'currency' => $advertiser->currency,
             ],
             'period' => [
                 'today_start' => $todayStart->toISOString(),

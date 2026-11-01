@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/lib/navigation";
 import { ApiError, clearToken } from "@/lib/auth";
 
 export function useAdminQuery<T>(loader: (signal: AbortSignal) => Promise<T>, key: string) {

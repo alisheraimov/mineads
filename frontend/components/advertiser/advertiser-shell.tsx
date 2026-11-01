@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
+import { useRouter } from "@/lib/navigation";
 import { useEffect, useState } from "react";
 import {
   BookOpen,
@@ -19,7 +20,6 @@ import {
 } from "lucide-react";
 import { AccountHeader } from "@/components/account/account-header";
 import { Button } from "@/components/ui/button";
-import { startRouteProgress } from "@/components/ui/route-progress";
 import { User, getCurrentUser, logout, clearToken, adminCan } from "@/lib/auth";
 import { campaignOptions } from "@/lib/campaigns";
 import { formatMicros } from "@/lib/advertiser-format";
@@ -58,7 +58,6 @@ export function AdvertiserShell({ children }: { children: React.ReactNode }) {
   }, []);
   async function handleLogout() {
     await logout().catch(() => clearToken());
-    startRouteProgress();
     router.push("/login");
   }
   if (error)

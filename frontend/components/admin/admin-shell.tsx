@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/lib/navigation";
 import { Loader2 } from "lucide-react";
 import { AccountHeader } from "@/components/account/account-header";
 import { AdvertiserSidebar } from "@/components/advertiser/advertiser-shell";

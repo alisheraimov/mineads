@@ -1,9 +1,9 @@
 "use client";
 
 import { Suspense, useEffect, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
+import { useRouter } from "@/lib/navigation";
 
-import { startRouteProgress } from "@/components/ui/route-progress";
 import { adminHome, getCurrentUser, setToken } from "@/lib/auth";
 
 export default function AuthCallbackPage() {
@@ -37,7 +37,6 @@ function AuthCallbackContent() {
 
     getCurrentUser()
       .then(({ data }) => {
-        startRouteProgress();
 
         if (data.status === "suspended") {
           router.replace("/account-suspended");

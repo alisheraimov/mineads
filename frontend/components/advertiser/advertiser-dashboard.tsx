@@ -1,7 +1,9 @@
 "use client";
 
+import { formatUsd as formatMicros } from "@/lib/money";
+
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/lib/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { ChevronRight, Loader2, Plus } from "lucide-react";
 
@@ -12,7 +14,6 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { SpendChart } from "@/components/advertiser/spend-chart";
-import { startRouteProgress } from "@/components/ui/route-progress";
 import {
   AdvertiserDashboard as DashboardData,
   getAdvertiserDashboard,
@@ -81,7 +82,6 @@ export function AdvertiserDashboard() {
 
   async function handleLogout() {
     await logout().catch(() => clearToken());
-    startRouteProgress();
     router.push("/");
   }
 
@@ -368,18 +368,6 @@ function StatusBadge({ status }: { status: string }) {
       {status.replace("_", " ")}
     </Badge>
   );
-}
-
-function formatMicros(value: number) {
-  return formatCurrencyValue(value / 1_000_000);
-}
-
-function formatCurrencyValue(value: number) {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    maximumFractionDigits: 2,
-  }).format(value);
 }
 
 function formatNumber(value: number) {

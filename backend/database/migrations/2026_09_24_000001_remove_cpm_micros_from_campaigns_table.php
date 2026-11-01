@@ -30,7 +30,7 @@ return new class extends Migration
         }
 
         Schema::table('campaigns', function (Blueprint $table) {
-            $table->unsignedBigInteger('cpm_micros')->nullable()->after('pricing_model');
+            $table->unsignedBigInteger('cpm_micros')->nullable();
         });
     }
 };

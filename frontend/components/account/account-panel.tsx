@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/lib/navigation";
 import { FormEvent, ReactNode, useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
 
@@ -9,7 +9,6 @@ import { AccountHeader } from "@/components/account/account-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { startRouteProgress } from "@/components/ui/route-progress";
 import {
   ApiError,
   User,
@@ -97,7 +96,6 @@ export function AccountPanel() {
 
   async function handleLogout() {
     await logout().catch(() => clearToken());
-    startRouteProgress();
     router.push("/login");
   }
 

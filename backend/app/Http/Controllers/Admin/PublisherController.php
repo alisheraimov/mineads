@@ -42,7 +42,7 @@ class PublisherController extends Controller
         return response()->json(['data' => $page->getCollection()->map(function ($a) use ($money): array {
             $u = $a->user;
             $status = ! $u || $u->trashed() ? 'deleted' : ($u->status !== 'active' ? $u->status : $a->status);
-            $row = ['id' => $u?->id, 'name' => $u?->name ?? 'Deleted publisher', 'email' => $u?->email, 'status' => $status, 'servers_count' => $a->servers_count, 'active_servers_count' => $status === 'active' ? $a->active_servers_count : 0, 'last_heartbeat_at' => $a->last_heartbeat_at, 'currency' => $a->currency];
+            $row = ['id' => $u?->id, 'name' => $u?->name ?? 'Deleted publisher', 'email' => $u?->email, 'status' => $status, 'servers_count' => $a->servers_count, 'active_servers_count' => $status === 'active' ? $a->active_servers_count : 0, 'last_heartbeat_at' => $a->last_heartbeat_at];
             if ($money) {
                 $row['earnings_micros'] = (int) $a->earnings_micros;
             }

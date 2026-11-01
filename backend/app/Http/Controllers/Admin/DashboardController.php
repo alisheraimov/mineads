@@ -43,8 +43,7 @@ class DashboardController extends Controller
         $pendingCreatives = app(AdminCreativeService::class)->reviewableQuery()->where('status', 'pending_review');
         $oldestPendingCreative = (clone $pendingCreatives)->orderByRaw('COALESCE(review_submitted_at, created_at) ASC')->first();
         $payouts = Payout::query()->where('status', 'pending')
-            ->selectRaw('currency, COUNT(*) as count, SUM(amount_micros) as amount_micros')
-            ->groupBy('currency')->orderBy('currency')->get();
+            ->selectRaw('COUNT(*) as count, COALESCE(SUM(amount_micros), 0) as amount_micros')->first();
 
         return response()->json(['data' => $this->visibleData($request, [
             'active_campaigns' => Campaign::query()->where('status', 'active')->count(),
@@ -55,11 +54,8 @@ class DashboardController extends Controller
             'unhealthy_servers' => $unhealthy->count(),
             'offline_servers' => $offline->count(),
             'high_invalid_rate_servers' => $risky->count(),
-            'pending_payouts' => (int) $payouts->sum('count'),
-            'pending_payout_amounts' => $payouts->map(fn ($payout): array => [
-                'currency' => $payout->currency,
-                'amount_micros' => (int) $payout->amount_micros,
-            ]),
+            'pending_payouts' => (int) $payouts->count,
+            'pending_payout_micros' => (int) $payouts->amount_micros,
             'health_rules' => [
                 'heartbeat_timeout_seconds' => (int) config('publisher.heartbeat_timeout_seconds'),
                 'invalid_rate_percent' => (int) config('admin.health_invalid_rate_percent'),
@@ -138,7 +134,6 @@ class DashboardController extends Controller
                 'earnings_micros' => (int) $totals->earnings,
                 'fee_micros' => (int) $totals->fee,
             ],
-            'currency' => 'USD',
             'chart' => $chart,
             'generated_at' => $now->toISOString(),
         ])]);
@@ -149,7 +144,7 @@ class DashboardController extends Controller
         if ($request->user()->adminCan('admin.finance.view')) {
             return $data;
         }
-        foreach (['spend_micros', 'earnings_micros', 'fee_micros', 'pending_payouts', 'pending_payout_amounts'] as $key) {
+        foreach (['spend_micros', 'earnings_micros', 'fee_micros', 'pending_payouts', 'pending_payout_micros'] as $key) {
             unset($data[$key]);
         }
         foreach ($data as $key => $value) {

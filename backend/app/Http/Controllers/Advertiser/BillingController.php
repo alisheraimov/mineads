@@ -33,7 +33,7 @@ class BillingController extends Controller
         $currentMonth = $now->startOfMonth();
         $monthExpression = 'SUBSTR(CAST(created_at AS TEXT), 1, 7)';
         $totals = AdvertiserLedgerEntry::query()
-            ->where('advertiser_account_id', $account->id)->where('currency', $account->currency)
+            ->where('advertiser_account_id', $account->id)
             ->selectRaw("{$monthExpression} as month, SUM(amount_micros) as net_micros,
                 SUM(CASE WHEN type = 'deposit' THEN amount_micros ELSE 0 END) as funds_added_micros,
                 SUM(CASE WHEN type = 'spend' THEN -amount_micros ELSE 0 END) as spend_micros,
@@ -55,7 +55,7 @@ class BillingController extends Controller
         $current = collect($months)->firstWhere('is_current', true);
 
         return [
-            'account' => ['name' => $account->name, 'status' => $account->status, 'currency' => $account->currency],
+            'account' => ['name' => $account->name, 'status' => $account->status],
             'metrics' => ['available_balance_micros' => $balance, 'funds_added_month_micros' => $current['funds_added_micros'],
                 'spend_month_micros' => $current['spend_micros'],
                 'impressions_month' => ValidatedImpression::query()->where('advertiser_account_id', $account->id)->whereBetween('validated_at', [$currentMonth, $now->endOfMonth()])->count()],

@@ -246,7 +246,6 @@ class AuthController extends Controller
             $user->advertiserAccount()->firstOrCreate([], [
                 'name' => $name,
                 'status' => 'active',
-                'currency' => 'USD',
             ]);
 
             return;
@@ -255,7 +254,6 @@ class AuthController extends Controller
         $user->publisherAccount()->firstOrCreate([], [
             'name' => $name,
             'status' => 'active',
-            'currency' => 'USD',
         ]);
     }
 

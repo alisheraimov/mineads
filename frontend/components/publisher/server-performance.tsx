@@ -10,7 +10,7 @@ import { money, panelClass } from "@/components/publisher/server-shared";
 
 function dateBefore(days: number) { const date = new Date(); date.setUTCDate(date.getUTCDate() - days); return date.toISOString().slice(0, 10); }
 
-export function ServerPerformancePanel({ id, currency }: { id: number; currency: string }) {
+export function ServerPerformancePanel({ id }: { id: number }) {
   const [from, setFrom] = useState(() => dateBefore(29));
   const [to, setTo] = useState(() => dateBefore(0));
   const [group, setGroup] = useState("day");
@@ -29,7 +29,7 @@ export function ServerPerformancePanel({ id, currency }: { id: number; currency:
     return () => { mounted = false; };
   }, [id, query]);
   function submit(event: FormEvent) { event.preventDefault(); setQuery({ from, to, group, compare: compare ? "1" : "0" }); }
-  const formatValue = (value: number) => metric === "impressions" ? value.toLocaleString("en-US") : money(value, currency);
+  const formatValue = (value: number) => metric === "impressions" ? value.toLocaleString("en-US") : money(value);
   const previousKey = `previous_${metric}` as const;
 
   return <section className={panelClass}>
@@ -55,7 +55,7 @@ export function ServerPerformancePanel({ id, currency }: { id: number; currency:
           {report.compare && <Line dataKey="previous" type="monotone" stroke="var(--color-previous)" strokeDasharray="5 5" dot={false} />}
         </LineChart>
       </ChartContainer>
-      <p className="mt-4 text-xs text-muted-foreground">{money(report.earnings_micros, currency)} earnings · {report.impressions.toLocaleString("en-US")} validated impressions · {report.from}–{report.to} UTC. {report.compare && `Dashed line: ${report.previous_from}–${report.previous_to}. `}Current-period earnings are estimates until the billing period is finalized.</p>
+      <p className="mt-4 text-xs text-muted-foreground">{money(report.earnings_micros)} earnings · {report.impressions.toLocaleString("en-US")} validated impressions · {report.from}–{report.to} UTC. {report.compare && `Dashed line: ${report.previous_from}–${report.previous_to}. `}Current-period earnings are estimates until the billing period is finalized.</p>
     </div>}
   </section>;
 }

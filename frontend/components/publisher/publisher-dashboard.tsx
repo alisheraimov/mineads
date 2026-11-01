@@ -1,11 +1,12 @@
 "use client";
 
+import { formatUsd as money } from "@/lib/money";
+
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/lib/navigation";
 import { useEffect, useState } from "react";
 import { ChevronRight, Loader2, Server } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { startRouteProgress } from "@/components/ui/route-progress";
 import { PublisherShell, AddServerButton } from "@/components/publisher/publisher-shell";
 import { EarningsChart } from "@/components/publisher/earnings-chart";
 import { getPublisherDashboard, PublisherDashboard as DashboardData } from "@/lib/publisher";
@@ -28,7 +29,6 @@ export function PublisherDashboard() {
       if (!mounted) return;
       if (error instanceof ApiError && error.status === 401) {
         clearToken();
-        startRouteProgress();
         router.replace("/login");
         return;
       }
@@ -39,7 +39,6 @@ export function PublisherDashboard() {
 
   async function handleLogout() {
     await logout().catch(() => clearToken());
-    startRouteProgress();
     router.push("/login");
   }
 
@@ -62,7 +61,6 @@ export function PublisherDashboard() {
 
 function DashboardContent({ dashboard }: { dashboard: DashboardData }) {
   const formatDate = (date: string, options: Intl.DateTimeFormatOptions) => new Date(date).toLocaleDateString("en-US", { ...options, timeZone: "UTC" });
-  const money = (micros: number) => new Intl.NumberFormat("en-US", { style: "currency", currency: dashboard.account.currency }).format(micros / 1_000_000);
   const m = dashboard.metrics;
   const today = formatDate(dashboard.period.today_start, { month: "short", day: "numeric" });
   const month = `${formatDate(dashboard.period.month_start, { month: "short", day: "numeric" })}–${formatDate(dashboard.period.month_end, { day: "numeric" })}`;

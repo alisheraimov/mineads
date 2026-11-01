@@ -1,13 +1,12 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/lib/navigation";
 import { useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { cn } from "cn";
 
 import { AuthError, AuthIntro } from "@/components/auth/auth-shell";
 import { PrimaryButton } from "@/components/ui/primary-button";
-import { startRouteProgress } from "@/components/ui/route-progress";
 import { adminHome, completeOnboarding, getCurrentUser } from "@/lib/auth";
 
 type Path = "advertiser" | "publisher";
@@ -37,21 +36,16 @@ export function ChoosePathPanel() {
     getCurrentUser()
       .then(({ data }) => {
         if (!data.email_verified_at) {
-          startRouteProgress();
           router.replace(`/verify-email?email=${encodeURIComponent(data.email)}`);
         } else if (data.role === "admin") {
-          startRouteProgress();
           router.replace(adminHome(data));
         } else if (data.advertiser_account) {
-          startRouteProgress();
           router.replace("/account-ready?role=advertiser");
         } else if (data.publisher_account) {
-          startRouteProgress();
           router.replace("/account-ready?role=publisher");
         }
       })
       .catch(() => {
-        startRouteProgress();
         router.replace("/login");
       });
   }, [router]);
@@ -62,7 +56,6 @@ export function ChoosePathPanel() {
 
     try {
       await completeOnboarding(selectedPath);
-      startRouteProgress();
       router.push(`/account-ready?role=${selectedPath}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to choose an account path.");

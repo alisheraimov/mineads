@@ -55,7 +55,7 @@ class DashboardController extends Controller
         })->all();
 
         return response()->json(['data' => [
-            'account' => $publisher->only(['id', 'name', 'status', 'currency']),
+            'account' => $publisher->only(['id', 'name', 'status']),
             'server_count' => $publisher->servers()->count(),
             'period' => [
                 'today_start' => $today->toISOString(),

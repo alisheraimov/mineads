@@ -17,11 +17,11 @@ class PublisherBalanceService
     {
         $payable = (int) PublisherLedgerEntry::query()
             ->where('publisher_account_id', $publisher->id)
-            ->where('currency', $publisher->currency)
+
             ->where('type', 'payable')->sum('amount_micros');
         $committed = (int) Payout::query()
             ->where('publisher_account_id', $publisher->id)
-            ->where('currency', $publisher->currency)
+
             ->whereIn('status', ['pending', 'processing', 'paid'])->sum('amount_micros');
 
         return $payable - $committed;

@@ -1,5 +1,7 @@
 "use client";
 
+import { formatUsd as money } from "@/lib/money";
+
 import { useState } from "react";
 import { CartesianGrid, Line, LineChart, XAxis, YAxis } from "recharts";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
@@ -8,7 +10,6 @@ import { cn } from "@/lib/utils";
 
 export function EarningsChart({ dashboard }: { dashboard: PublisherDashboard }) {
   const [metric, setMetric] = useState<"earnings" | "impressions">("earnings");
-  const money = (micros: number) => new Intl.NumberFormat("en-US", { style: "currency", currency: dashboard.account.currency }).format(micros / 1_000_000);
   const data = dashboard.performance_chart;
   const totals = {
     earnings: money(data.reduce((total, point) => total + point.earnings_micros, 0)),
@@ -22,7 +23,7 @@ export function EarningsChart({ dashboard }: { dashboard: PublisherDashboard }) 
       <div className="flex flex-col border-b sm:flex-row sm:items-stretch">
         <div className="flex-1 p-6">
           <h2 className="text-base font-semibold">Daily {metric}</h2>
-          <p className="mt-1 text-xs text-muted-foreground">Last 30 days · {dashboard.account.currency} · UTC</p>
+          <p className="mt-1 text-xs text-muted-foreground">Last 30 days · USD · UTC</p>
         </div>
         <div role="group" aria-label="Chart metric" className="grid grid-cols-2 border-t sm:border-t-0">
           {(["earnings", "impressions"] as const).map((item) => (

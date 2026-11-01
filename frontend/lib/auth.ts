@@ -6,7 +6,6 @@ export type CommercialAccount = {
   id: number;
   name: string;
   status: AccountStatus;
-  currency: string;
 };
 
 export type User = {

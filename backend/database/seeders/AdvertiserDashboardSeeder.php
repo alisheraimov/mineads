@@ -38,7 +38,7 @@ class AdvertiserDashboardSeeder extends Seeder
 
         $advertiser = AdvertiserAccount::query()->updateOrCreate(
             ['user_id' => $user->id],
-            ['name' => 'RealmCraft', 'status' => 'active', 'currency' => 'USD'],
+            ['name' => 'RealmCraft', 'status' => 'active'],
         );
 
         $publisherUser = User::query()->updateOrCreate(
@@ -54,7 +54,7 @@ class AdvertiserDashboardSeeder extends Seeder
 
         $publisher = PublisherAccount::query()->updateOrCreate(
             ['user_id' => $publisherUser->id],
-            ['name' => 'Emerald Network', 'status' => 'active', 'currency' => 'USD'],
+            ['name' => 'Emerald Network', 'status' => 'active'],
         );
 
         $server = Server::query()->updateOrCreate(
@@ -90,7 +90,6 @@ class AdvertiserDashboardSeeder extends Seeder
                 'advertiser_account_id' => $advertiser->id,
                 'name' => $data['name'],
                 'status' => 'active',
-                'pricing_model' => 'cpm',
                 'daily_budget_micros' => $data['daily_budget_micros'],
                 'total_budget_micros' => $data['total_budget_micros'],
                 'starts_at' => now()->subDays(30),
@@ -132,7 +131,6 @@ class AdvertiserDashboardSeeder extends Seeder
             'campaign_id' => null,
             'type' => 'deposit',
             'amount_micros' => 150000000,
-            'currency' => 'USD',
             'reference_type' => 'advertiser_dashboard_seed',
             'reference_id' => $advertiser->id,
             'created_at' => now()->subDays(31),
@@ -204,7 +202,6 @@ class AdvertiserDashboardSeeder extends Seeder
                     'campaign_id' => $campaign->id,
                     'type' => 'spend',
                     'amount_micros' => -1 * $billableMicros * $impressionCount,
-                    'currency' => 'USD',
                     'reference_type' => 'advertiser_dashboard_seed',
                     'reference_id' => $delivery->id,
                     'created_at' => $displayedAt->copy()->addSeconds(20),

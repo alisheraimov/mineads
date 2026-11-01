@@ -15,7 +15,7 @@ export type UserList = {
 export type UserDetail = AdminUser & {
   permissions: string[]; can_manage: boolean; can_change_role: boolean; protected_reason: string | null;
   can_view_finance: boolean;
-  account: null | { type: "advertiser" | "publisher"; status: string; currency: string; active_campaigns?: number;
+  account: null | { type: "advertiser" | "publisher"; status: string; active_campaigns?: number;
     servers?: number; active_servers?: number; available_micros?: number; pending_micros?: number; lifetime_spend_micros?: number; lifetime_earnings_micros?: number };
   history: { id: number; action: string; details: { reason?: string; after?: string }; created_at: string }[];
 };

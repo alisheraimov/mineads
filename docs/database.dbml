@@ -1,6 +1,6 @@
 Project MineAds {
   database_type: "PostgreSQL"
-  Note: "Visual reference for the MineAds database. Keep this file in sync with Laravel migrations in backend/database/migrations."
+  Note: "All monetary values are integer USD micros (1 USD = 1,000,000 micros). Visual reference for the MineAds database. Keep this file in sync with Laravel migrations in backend/database/migrations."
 }
 
 Table users {
@@ -24,7 +24,6 @@ Table advertiser_accounts {
   user_id bigint [not null, unique]
   name varchar
   status varchar [not null, default: "active"]
-  currency varchar(3) [not null, default: "USD"]
   created_at timestamp [null]
   updated_at timestamp [null]
 
@@ -38,7 +37,6 @@ Table publisher_accounts {
   user_id bigint [not null, unique]
   name varchar
   status varchar [not null, default: "active"]
-  currency varchar(3) [not null, default: "USD"]
   created_at timestamp [null]
   updated_at timestamp [null]
 
@@ -89,7 +87,6 @@ Table campaigns {
   advertiser_account_id bigint [not null]
   name varchar
   status varchar [not null, default: "draft"]
-  pricing_model varchar [not null, default: "cpm"]
   daily_budget_micros bigint [null]
   total_budget_micros bigint [null]
   starts_at timestamp [null]
@@ -283,7 +280,6 @@ Table advertiser_ledger_entries {
   campaign_id bigint [null]
   type varchar
   amount_micros bigint
-  currency varchar(3) [not null, default: "USD"]
   reference_type varchar [null]
   reference_id bigint [null]
   created_at timestamp [null]
@@ -303,7 +299,7 @@ Table publisher_ledger_entries {
   server_id bigint [null]
   type varchar
   amount_micros bigint
-  currency varchar(3) [not null, default: "USD"]
+  settled_at timestamp [null]
   reference_type varchar [null]
   reference_id bigint [null]
   created_at timestamp [null]
@@ -312,6 +308,7 @@ Table publisher_ledger_entries {
   indexes {
     type
     (publisher_account_id, created_at)
+    (publisher_account_id, type, created_at) [name: "publisher_ledger_settlement_index"]
     (server_id, created_at)
     (reference_type, reference_id)
   }
@@ -322,7 +319,7 @@ Table payouts {
   publisher_account_id bigint [not null]
   status varchar [not null, default: "pending"]
   amount_micros bigint [not null]
-  currency varchar(3) [not null, default: "USD"]
+  cycle_month date [null]
   provider varchar [not null, default: "stripe"]
   provider_payout_id varchar [unique, null]
   period_start timestamp
@@ -337,6 +334,8 @@ Table payouts {
     period_end
     (publisher_account_id, status)
     (publisher_account_id, period_start, period_end)
+    (publisher_account_id, cycle_month) [unique, name: "publisher_payout_cycle_unique"]
+    (status, paid_at) [name: "finance_payout_paid_index"]
   }
 }
 

@@ -76,7 +76,6 @@ class ServerController extends Controller
 
         return response()->json(['data' => [
             ...$this->summary($model),
-            'currency' => $this->publisher($request)->currency,
             'created_at' => $model->created_at->toISOString(),
             'activated_at' => $model->activated_at?->toISOString(),
             'setup_token_expires_at' => $model->setup_token_expires_at?->toISOString(),

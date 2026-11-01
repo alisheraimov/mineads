@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useSearchParams } from "next/navigation";
+import { useRouter } from "@/lib/navigation";
 import { useEffect, useState } from "react";
 import { ChevronLeft, ChevronRight, Plus, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";

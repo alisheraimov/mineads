@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/lib/navigation";
 import { FormEvent, useState } from "react";
 import { Loader2 } from "lucide-react";
 
@@ -10,7 +10,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PrimaryButton } from "@/components/ui/primary-button";
-import { startRouteProgress } from "@/components/ui/route-progress";
 import { googleRedirectUrl, register, setToken } from "@/lib/auth";
 
 export function RegisterForm() {
@@ -32,7 +31,6 @@ export function RegisterForm() {
         password_confirmation: password,
       });
       setToken(response.token);
-      startRouteProgress();
       router.push(`/verify-email?email=${encodeURIComponent(response.user.email)}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to create account.");

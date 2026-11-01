@@ -225,7 +225,6 @@ class ImpressionValidationService
             'campaign_id' => $campaign->id,
             'type' => 'spend',
             'amount_micros' => -1 * $billableMicros,
-            'currency' => 'USD',
             'reference_type' => 'raw_impression_event',
             'reference_id' => $raw->id,
         ]);
@@ -235,7 +234,6 @@ class ImpressionValidationService
             'server_id' => $server->id,
             'type' => 'pending_earning',
             'amount_micros' => $publisherEarningMicros,
-            'currency' => 'USD',
             'reference_type' => 'raw_impression_event',
             'reference_id' => $raw->id,
         ]);

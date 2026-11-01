@@ -10,7 +10,7 @@ export type BillingMonth = {
   ending_balance_micros: number;
 };
 export type AdvertiserBilling = {
-  account: { name: string; status: string; currency: string };
+  account: { name: string; status: string };
   metrics: {
     available_balance_micros: number;
     funds_added_month_micros: number;

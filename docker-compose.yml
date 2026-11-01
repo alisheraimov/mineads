@@ -2,7 +2,7 @@ services:
   frontend:
     image: node:22-alpine
     working_dir: /app
-    command: sh -c "test -x node_modules/.bin/next || npm install && npm run dev -- --hostname 0.0.0.0"
+    command: sh -c "npm install --no-audit --no-fund && npm run dev -- --hostname 0.0.0.0"
     ports:
       - "3000:3000"
     volumes:

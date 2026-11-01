@@ -32,7 +32,7 @@ class PublisherPayoutService
 
         $totals = ['settled_entries' => 0, 'created_payouts' => 0];
 
-        PublisherAccount::query()->where('status', 'active')->where('currency', 'USD')
+        PublisherAccount::query()->where('status', 'active')
             ->chunkById(100, function (Collection $publishers) use ($now, $cycleMonth, &$totals): void {
                 foreach ($publishers as $publisher) {
                     $result = $this->preparePublisher($publisher->id, $cycleMonth, $now);
@@ -65,7 +65,7 @@ class PublisherPayoutService
 
             $settled = PublisherLedgerEntry::query()
                 ->where('publisher_account_id', $publisher->id)
-                ->where('currency', $publisher->currency)
+
                 ->where('type', 'pending_earning')
                 ->where('created_at', '<', $cycleMonth)
                 ->where(function (Builder $query) use ($suspendedServerIds): void {
@@ -76,7 +76,7 @@ class PublisherPayoutService
             $result = ['settled_entries' => $settled, 'created_payouts' => 0];
 
             if (Payout::query()->where('publisher_account_id', $publisher->id)
-                ->where('currency', $publisher->currency)
+
                 ->where('cycle_month', $cycleMonth->toDateString())->exists()) {
                 return $result;
             }
@@ -90,7 +90,6 @@ class PublisherPayoutService
 
             $payout = Payout::query()->create([
                 'publisher_account_id' => $publisher->id,
-                'currency' => $publisher->currency,
                 'status' => 'pending',
                 'amount_micros' => $available,
                 'provider' => 'manual',
@@ -101,7 +100,7 @@ class PublisherPayoutService
             $this->reservations->reserve($payout, $publisher);
             PayoutEvent::query()->create([
                 'payout_id' => $payout->id, 'actor_name' => 'System', 'action' => 'created',
-                'details' => ['to' => 'pending', 'amount_micros' => $available, 'currency' => $publisher->currency],
+                'details' => ['to' => 'pending', 'amount_micros' => $available],
             ]);
 
             $result['created_payouts'] = 1;

@@ -15,7 +15,6 @@ class AdvertiserLedgerEntryFactory extends Factory
             'campaign_id' => Campaign::factory(),
             'type' => fake()->randomElement(['deposit', 'spend', 'adjustment']),
             'amount_micros' => fake()->numberBetween(1, 100) * 1000000,
-            'currency' => 'USD',
             'reference_type' => null,
             'reference_id' => null,
         ];

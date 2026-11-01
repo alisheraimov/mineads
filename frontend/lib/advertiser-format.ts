@@ -1,11 +1,7 @@
+import { formatUsd } from "@/lib/money";
+
 export function formatMicros(value: number | null) {
-  return value === null
-    ? "No cap"
-    : new Intl.NumberFormat("en-US", {
-        style: "currency",
-        currency: "USD",
-        maximumFractionDigits: 2,
-      }).format(value / 1_000_000);
+  return value === null ? "No cap" : formatUsd(value);
 }
 
 export function formatNumber(value: number) {

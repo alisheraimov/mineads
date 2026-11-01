@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/lib/navigation";
 import { useEffect, useState } from "react";
 import { ChevronRight, Loader2 } from "lucide-react";
 import { PublisherShell } from "@/components/publisher/publisher-shell";
@@ -40,9 +40,7 @@ export function ServerStatus({ status }: { status: string }) {
 export function utcDate(value: string | null) {
   return value ? new Date(value).toLocaleString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit", timeZone: "UTC" }) + " UTC" : "Never";
 }
-export function money(value: number, currency = "USD") {
-  return new Intl.NumberFormat("en-US", { style: "currency", currency }).format(value / 1_000_000);
-}
+export { formatUsd as money } from "@/lib/money";
 export function UnavailablePluginLinks() {
   return <div className="flex flex-wrap gap-2"><Button disabled title="Plugin download will be available later">Download plugin</Button><Button variant="outline" disabled title="Setup guide will be available later">Setup guide</Button></div>;
 }

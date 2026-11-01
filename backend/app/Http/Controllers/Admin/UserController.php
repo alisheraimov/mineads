@@ -69,7 +69,7 @@ class UserController extends Controller
         $account = null;
         if ($advertiser = $user->advertiserAccount) {
             $account = [
-                'type' => 'advertiser', 'status' => $advertiser->status, 'currency' => $advertiser->currency,
+                'type' => 'advertiser', 'status' => $advertiser->status,
                 'active_campaigns' => $advertiser->campaigns()->where('status', 'active')->count(),
             ];
             if ($finance) {
@@ -79,12 +79,12 @@ class UserController extends Controller
             }
         } elseif ($publisher = $user->publisherAccount) {
             $account = [
-                'type' => 'publisher', 'status' => $publisher->status, 'currency' => $publisher->currency,
+                'type' => 'publisher', 'status' => $publisher->status,
                 'servers' => $publisher->servers()->count(), 'active_servers' => $publisher->servers()->where('status', 'active')->count(),
             ];
             if ($finance) {
                 $account['available_micros'] = $balances->availableMicros($publisher);
-                $account['pending_micros'] = max(0, (int) PublisherLedgerEntry::query()->where('publisher_account_id', $publisher->id)->where('currency', $publisher->currency)->where('type', 'pending_earning')->sum('amount_micros'));
+                $account['pending_micros'] = max(0, (int) PublisherLedgerEntry::query()->where('publisher_account_id', $publisher->id)->where('type', 'pending_earning')->sum('amount_micros'));
                 $account['lifetime_earnings_micros'] = (int) ValidatedImpression::query()->where('publisher_account_id', $publisher->id)->sum('publisher_earning_micros');
             }
         }

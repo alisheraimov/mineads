@@ -71,16 +71,16 @@ class FinanceController extends Controller
         $q = $this->finance->ledgerRows($q, $kind)->orderByDesc('e.created_at')->orderByDesc('e.id');
         if ($request->route('export')) {
             return $this->csv($kind.'-ledger', function ($out) use ($q, $kind): void {
-                fputcsv($out, ['Entry ID', 'Posted UTC', 'User ID', 'Name', 'Deleted user', 'Type', 'Related ID', 'Related name', 'Amount USD', 'Currency', 'Source type', 'Source ID', 'Released UTC', 'Held'], ',', '"', '');
+                fputcsv($out, ['Entry ID', 'Posted UTC', 'User ID', 'Name', 'Deleted user', 'Type', 'Related ID', 'Related name', 'Amount USD', 'Source type', 'Source ID', 'Released UTC', 'Held'], ',', '"', '');
                 foreach ($q->cursor() as $record) {
                     $e = $this->finance->ledgerRow($record);
-                    $this->writeCsv($out, [$kind === 'advertiser' ? 'ALE-'.$e['id'] : 'PLE-'.$e['id'], $e['created_at'], 'U-'.$e['account']['id'], $e['account']['name'], $e['account']['deleted'] ? 'Yes' : 'No', $e['type'], $e['related']['id'] ?? '', $e['related']['name'] ?? '', $this->finance->exactMoney($e['amount_micros']), 'USD', $e['reference_type'], $e['reference_id'], $e['settled_at'], $e['held'] ? 'Yes' : 'No'], [8]);
+                    $this->writeCsv($out, [$kind === 'advertiser' ? 'ALE-'.$e['id'] : 'PLE-'.$e['id'], $e['created_at'], 'U-'.$e['account']['id'], $e['account']['name'], $e['account']['deleted'] ? 'Yes' : 'No', $e['type'], $e['related']['id'] ?? '', $e['related']['name'] ?? '', $this->finance->exactMoney($e['amount_micros']), $e['reference_type'], $e['reference_id'], $e['settled_at'], $e['held'] ? 'Yes' : 'No'], [8]);
                 }
             });
         }
         $page = $q->paginate((int) ($input['per_page'] ?? 10));
         $table = $kind === 'publisher' ? 'publisher_ledger_entries' : 'advertiser_ledger_entries';
-        $types = DB::table($table)->where('currency', 'USD')->distinct()->orderBy('type')->pluck('type');
+        $types = DB::table($table)->distinct()->orderBy('type')->pluck('type');
 
         return response()->json(['data' => $page->getCollection()->map(fn ($e) => $this->finance->ledgerRow($e)), 'summary' => $summary, 'types' => $types, 'meta' => $this->finance->meta($page), 'permissions' => $this->permissions($request), 'generated_at' => now('UTC')->toISOString()]);
     }
@@ -98,10 +98,10 @@ class FinanceController extends Controller
         $q->when(! empty($input['status']), fn ($q) => $q->where('status', $input['status']))->latest('created_at')->latest('id');
         if ($request->route('export')) {
             return $this->csv('payouts', function ($out) use ($q): void {
-                fputcsv($out, ['Payout ID', 'Publisher ID', 'Publisher', 'Publisher status', 'Amount USD', 'Currency', 'Earnings from UTC', 'Earnings through UTC', 'Status', 'Created UTC', 'Paid UTC', 'Payment method', 'External reference', 'Reason', 'Internal note'], ',', '"', '');
+                fputcsv($out, ['Payout ID', 'Publisher ID', 'Publisher', 'Publisher status', 'Amount USD', 'Earnings from UTC', 'Earnings through UTC', 'Status', 'Created UTC', 'Paid UTC', 'Payment method', 'External reference', 'Reason', 'Internal note'], ',', '"', '');
                 foreach ($q->reorder('id')->lazyById(500) as $payout) {
                     $e = $this->finance->payoutRow($payout);
-                    $this->writeCsv($out, ['PAY-'.$e['id'], $e['publisher']['id'] ?? '', $e['publisher']['name'] ?? '', $e['publisher']['status'] ?? '', $this->finance->exactMoney($e['amount_micros']), 'USD', $e['period_start'], $e['period_end'], $e['status'], $e['created_at'], $e['paid_at'], $e['payment_method'], $e['external_reference'], $e['reason'], $e['internal_note']], [4]);
+                    $this->writeCsv($out, ['PAY-'.$e['id'], $e['publisher']['id'] ?? '', $e['publisher']['name'] ?? '', $e['publisher']['status'] ?? '', $this->finance->exactMoney($e['amount_micros']), $e['period_start'], $e['period_end'], $e['status'], $e['created_at'], $e['paid_at'], $e['payment_method'], $e['external_reference'], $e['reason'], $e['internal_note']], [4]);
                 }
             });
         }
@@ -133,7 +133,7 @@ class FinanceController extends Controller
             DB::transaction(function () use ($request, $id, $input, $balances, $reservations): void {
                 $actor = User::query()->lockForUpdate()->findOrFail($request->user()->id);
                 abort_unless($actor->status === 'active' && $actor->email_verified_at && $actor->adminCan('admin.finance.view') && $actor->adminCan('admin.finance.manage'), 403, 'Your financial permissions changed.');
-                $lookup = Payout::query()->where('currency', 'USD')->findOrFail($id);
+                $lookup = Payout::query()->findOrFail($id);
                 $publisherId = $lookup->publisher_account_id;
                 $publisherUserId = PublisherAccount::whereKey($publisherId)->value('user_id');
                 $user = User::withTrashed()->lockForUpdate()->find($publisherUserId);
@@ -164,7 +164,7 @@ class FinanceController extends Controller
                     $payout->update(['status' => $action, 'reason' => trim($input['reason']), 'internal_note' => $input['internal_note'] ?? null, 'version' => $payout->version + 1]);
                 }
                 PayoutEvent::create(['payout_id' => $payout->id, 'actor_id' => $actor->id, 'actor_name' => $actor->name, 'action' => $action,
-                    'details' => ['from' => $from, 'to' => $payout->status, 'amount_micros' => (int) $payout->amount_micros, 'currency' => $payout->currency, 'reason' => $payout->reason, 'payment_method' => $payout->payment_method, 'external_reference' => $payout->external_reference, 'paid_at' => $payout->paid_at?->toISOString(), 'internal_note' => $payout->internal_note]]);
+                    'details' => ['from' => $from, 'to' => $payout->status, 'amount_micros' => (int) $payout->amount_micros, 'reason' => $payout->reason, 'payment_method' => $payout->payment_method, 'external_reference' => $payout->external_reference, 'paid_at' => $payout->paid_at?->toISOString(), 'internal_note' => $payout->internal_note]]);
             }, 3);
         } catch (UniqueConstraintViolationException) {
             throw ValidationException::withMessages(['external_reference' => 'This payment reference is already recorded.']);

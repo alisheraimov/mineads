@@ -1,13 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/lib/navigation";
 import { FormEvent, useState } from "react";
 import { Loader2 } from "lucide-react";
 
 import { AuthError, AuthField, AuthForm, AuthIntro, AuthSubmit } from "@/components/auth/auth-shell";
 import { PrimaryButton } from "@/components/ui/primary-button";
-import { startRouteProgress } from "@/components/ui/route-progress";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { forgotPassword } from "@/lib/auth";
@@ -25,7 +24,6 @@ export function ForgotPasswordForm() {
 
     try {
       await forgotPassword(email);
-      startRouteProgress();
       router.push(`/reset-email-sent?email=${encodeURIComponent(email)}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to send reset link.");

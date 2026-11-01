@@ -50,7 +50,6 @@ class PublisherPayoutPreparationTest extends TestCase
         $this->assertSame($publisher->id, $payout->publisher_account_id);
         $this->assertSame(50000000, $payout->amount_micros);
         $this->assertSame('pending', $payout->status);
-        $this->assertSame('USD', $payout->currency);
         $this->assertSame('2026-10-01', $payout->cycle_month);
         $this->assertSame('2026-09-01 00:00:00', $payout->period_start->toDateTimeString());
         $this->assertSame('2026-09-30 23:59:59', $payout->period_end->toDateTimeString());
@@ -175,18 +174,14 @@ class PublisherPayoutPreparationTest extends TestCase
         $this->assertDatabaseHas('payouts', ['cycle_month' => '2026-10-01', 'amount_micros' => 70000000]);
     }
 
-    public function test_suspended_publishers_and_other_currencies_are_not_settled_or_paid(): void
+    public function test_suspended_publishers_are_not_settled_or_paid(): void
     {
         $suspended = PublisherAccount::factory()->create(['status' => 'suspended']);
         $suspendedEarning = $this->earning($suspended, 90000000, '2026-09-01 00:00:00');
-        $publisher = PublisherAccount::factory()->create(['currency' => 'EUR']);
-        $foreignEarning = $this->earning($publisher, 90000000, '2026-09-01 00:00:00', ['currency' => 'USD']);
-        $this->earning($publisher, 55000000, '2026-09-01 00:00:00', ['currency' => 'EUR']);
 
         $this->artisan('publishers:prepare-payouts')->assertSuccessful();
 
         $this->assertDatabaseHas('publisher_ledger_entries', ['id' => $suspendedEarning->id, 'type' => 'pending_earning', 'settled_at' => null]);
-        $this->assertDatabaseHas('publisher_ledger_entries', ['id' => $foreignEarning->id, 'type' => 'pending_earning', 'settled_at' => null]);
         $this->assertDatabaseCount('payouts', 0);
     }
 
@@ -340,7 +335,6 @@ class PublisherPayoutPreparationTest extends TestCase
         return PublisherLedgerEntry::factory()->create(array_merge([
             'publisher_account_id' => $publisher->id,
             'server_id' => null,
-            'currency' => $publisher->currency,
             'type' => 'pending_earning',
             'amount_micros' => $amount,
             'created_at' => $createdAt,

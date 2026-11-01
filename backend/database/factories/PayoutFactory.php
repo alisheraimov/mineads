@@ -13,7 +13,6 @@ class PayoutFactory extends Factory
             'publisher_account_id' => PublisherAccount::factory(),
             'status' => 'pending',
             'amount_micros' => fake()->numberBetween(25, 200) * 1000000,
-            'currency' => 'USD',
             'provider' => 'stripe',
             'provider_payout_id' => null,
             'period_start' => now()->subMonth()->startOfMonth(),

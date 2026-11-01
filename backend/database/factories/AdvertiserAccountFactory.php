@@ -13,7 +13,6 @@ class AdvertiserAccountFactory extends Factory
             'user_id' => User::factory()->state(['role' => 'advertiser']),
             'name' => fake()->company(),
             'status' => 'active',
-            'currency' => 'USD',
         ];
     }
 }

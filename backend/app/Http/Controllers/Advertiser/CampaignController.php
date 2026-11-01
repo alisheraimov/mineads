@@ -104,7 +104,7 @@ class CampaignController extends Controller
         $account = $this->account($request);
         abort_unless($account->status === 'active', 403, 'Your advertiser account is suspended.');
         $campaign = DB::transaction(function () use ($request, $account): Campaign {
-            $campaign = new Campaign(['advertiser_account_id' => $account->id, 'status' => 'active', 'pricing_model' => 'cpm']);
+            $campaign = new Campaign(['advertiser_account_id' => $account->id, 'status' => 'active']);
             $this->saveCampaign($campaign, $request->validated());
 
             return $campaign;

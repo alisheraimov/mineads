@@ -39,13 +39,13 @@ class AdminFinanceService
         $totals = (clone $q)->selectRaw('COUNT(*) as impressions, COALESCE(SUM(billable_micros),0) as spend, COALESCE(SUM(publisher_earning_micros),0) as earnings, COALESCE(SUM(platform_fee_micros),0) as revenue')->first();
         $workload = [];
         foreach (['pending', 'failed'] as $status) {
-            $p = Payout::query()->where('currency', 'USD')->where('status', $status);
+            $p = Payout::query()->where('status', $status);
             $workload[] = ['status' => $status, 'count' => (clone $p)->count(), 'amount_micros' => (int) $p->sum('amount_micros')];
         }
 
         return [
             'metrics' => ['spend_micros' => (int) $totals->spend, 'earnings_micros' => (int) $totals->earnings, 'revenue_micros' => (int) $totals->revenue, 'impressions' => (int) $totals->impressions,
-                'paid_micros' => (int) Payout::query()->where('currency', 'USD')->where('status', 'paid')->where('paid_at', '>=', $from)->where('paid_at', '<', $to)->sum('amount_micros')],
+                'paid_micros' => (int) Payout::query()->where('status', 'paid')->where('paid_at', '>=', $from)->where('paid_at', '<', $to)->sum('amount_micros')],
             'balances' => $this->currentBalances(), 'workload' => $workload,
             'points' => $this->chart($from, $to, $input['interval'] ?? 'day', (bool) ($input['compare'] ?? false)),
             'period' => ['from' => $from->toISOString(), 'to' => $to->toISOString()], 'generated_at' => now('UTC')->toISOString(),
@@ -97,13 +97,13 @@ class AdminFinanceService
 
     public function currentBalances(): array
     {
-        $released = DB::table('publisher_ledger_entries')->where('currency', 'USD')->where('type', 'payable')
+        $released = DB::table('publisher_ledger_entries')->where('type', 'payable')
             ->selectRaw('publisher_account_id, SUM(amount_micros) as amount')->groupBy('publisher_account_id');
-        $committed = DB::table('payouts')->where('currency', 'USD')->whereIn('status', ['pending', 'processing', 'paid'])
+        $committed = DB::table('payouts')->whereIn('status', ['pending', 'processing', 'paid'])
             ->selectRaw('publisher_account_id, SUM(amount_micros) as amount')->groupBy('publisher_account_id');
         $available = DB::table('publisher_accounts as a')->leftJoinSub($released, 'released', 'released.publisher_account_id', '=', 'a.id')
             ->leftJoinSub($committed, 'committed', 'committed.publisher_account_id', '=', 'a.id')
-            ->where('a.currency', 'USD')->selectRaw('a.id, a.user_id, COALESCE(released.amount,0) - COALESCE(committed.amount,0) as available');
+            ->selectRaw('a.id, a.user_id, COALESCE(released.amount,0) - COALESCE(committed.amount,0) as available');
         $sum = 0;
         $inconsistent = [];
         $inconsistentCount = 0;
@@ -120,10 +120,10 @@ class AdminFinanceService
         }
 
         return [
-            'advertiser_funds_micros' => (int) DB::table('advertiser_ledger_entries')->where('currency', 'USD')->sum('amount_micros'),
-            'awaiting_micros' => (int) DB::table('publisher_ledger_entries')->where('currency', 'USD')->where('type', 'pending_earning')->sum('amount_micros'),
-            'held_micros' => (int) DB::table('publisher_ledger_entries as e')->join('servers as s', 's.id', '=', 'e.server_id')->where('e.currency', 'USD')->where('e.type', 'pending_earning')->where('s.status', 'suspended')->sum('e.amount_micros'),
-            'available_micros' => $sum, 'reserved_micros' => (int) Payout::query()->where('currency', 'USD')->whereIn('status', ['pending', 'processing'])->sum('amount_micros'),
+            'advertiser_funds_micros' => (int) DB::table('advertiser_ledger_entries')->sum('amount_micros'),
+            'awaiting_micros' => (int) DB::table('publisher_ledger_entries')->where('type', 'pending_earning')->sum('amount_micros'),
+            'held_micros' => (int) DB::table('publisher_ledger_entries as e')->join('servers as s', 's.id', '=', 'e.server_id')->where('e.type', 'pending_earning')->where('s.status', 'suspended')->sum('e.amount_micros'),
+            'available_micros' => $sum, 'reserved_micros' => (int) Payout::query()->whereIn('status', ['pending', 'processing'])->sum('amount_micros'),
             'inconsistent_count' => $inconsistentCount, 'inconsistencies' => $inconsistent,
         ];
     }
@@ -137,7 +137,7 @@ class AdminFinanceService
         $relatedKey = $publisher ? 'server_id' : 'campaign_id';
         $q = DB::table($publisher ? 'publisher_ledger_entries as e' : 'advertiser_ledger_entries as e')
             ->join($accountTable.' as a', 'a.id', '=', 'e.'.$accountKey)->join('users as u', 'u.id', '=', 'a.user_id')
-            ->leftJoin($related.' as r', 'r.id', '=', 'e.'.$relatedKey)->where('e.currency', 'USD');
+            ->leftJoin($related.' as r', 'r.id', '=', 'e.'.$relatedKey);
         $this->dates($q, $input, 'e.created_at');
         if (! empty($input['account'])) {
             $q->where('u.id', $input['account']);
@@ -185,13 +185,13 @@ class AdminFinanceService
 
     public function ledgerRows(Builder $q, string $kind): Builder
     {
-        return $q->select(['e.id', 'e.type', 'e.amount_micros', 'e.currency', 'e.reference_type', 'e.reference_id', 'e.created_at', 'u.id as user_id', 'u.name as user_name', 'u.deleted_at as user_deleted_at', 'r.id as related_id', 'r.name as related_name', 'r.deleted_at as related_deleted_at'])
+        return $q->select(['e.id', 'e.type', 'e.amount_micros', 'e.reference_type', 'e.reference_id', 'e.created_at', 'u.id as user_id', 'u.name as user_name', 'u.deleted_at as user_deleted_at', 'r.id as related_id', 'r.name as related_name', 'r.deleted_at as related_deleted_at'])
             ->when($kind === 'publisher', fn ($q) => $q->addSelect(['e.settled_at', 'r.status as server_status']));
     }
 
     public function ledgerRow(object $e): array
     {
-        return ['id' => (int) $e->id, 'type' => $e->type, 'amount_micros' => (int) $e->amount_micros, 'currency' => $e->currency,
+        return ['id' => (int) $e->id, 'type' => $e->type, 'amount_micros' => (int) $e->amount_micros,
             'reference_type' => $e->reference_type, 'reference_id' => $e->reference_id ? (int) $e->reference_id : null, 'created_at' => $this->iso($e->created_at),
             'account' => ['id' => (int) $e->user_id, 'name' => $e->user_name, 'deleted' => (bool) $e->user_deleted_at],
             'related' => $e->related_id ? ['id' => (int) $e->related_id, 'name' => $e->related_name, 'deleted' => (bool) $e->related_deleted_at] : null,
@@ -200,7 +200,7 @@ class AdminFinanceService
 
     public function payoutQuery(array $input): \Illuminate\Database\Eloquent\Builder
     {
-        $q = Payout::query()->with(['publisherAccount.user' => fn ($q) => $q->withTrashed()])->where('currency', 'USD');
+        $q = Payout::query()->with(['publisherAccount.user' => fn ($q) => $q->withTrashed()]);
         $this->dates($q, $input, ($input['date_field'] ?? 'created') === 'paid' ? 'paid_at' : 'created_at');
         $q->when(! empty($input['account']), fn ($q) => $q->whereHas('publisherAccount', fn ($q) => $q->where('user_id', $input['account'])));
         if (! empty($input['search'])) {
@@ -217,7 +217,7 @@ class AdminFinanceService
         $p = $payout->publisherAccount;
         $u = $p?->user;
 
-        return ['id' => $payout->id, 'amount_micros' => (int) $payout->amount_micros, 'currency' => $payout->currency, 'status' => $payout->status,
+        return ['id' => $payout->id, 'amount_micros' => (int) $payout->amount_micros, 'status' => $payout->status,
             'period_start' => $payout->period_start?->toISOString(), 'period_end' => $payout->period_end?->toISOString(),
             'created_at' => $payout->created_at->toISOString(), 'paid_at' => $payout->paid_at?->toISOString(), 'version' => (int) ($payout->version ?? 1),
             'provider' => $payout->provider, 'payment_method' => $payout->payment_method, 'external_reference' => $payout->external_reference ?? $payout->provider_payout_id,
@@ -232,8 +232,8 @@ class AdminFinanceService
         $row['can_manage'] = $viewer->adminCan('admin.finance.manage') && ($row['publisher']['status'] ?? null) === 'active';
         $row['balances'] = [
             'available_micros' => $p ? $this->balances->rawAvailableMicros($p) : 0,
-            'awaiting_micros' => $p ? (int) DB::table('publisher_ledger_entries')->where('publisher_account_id', $p->id)->where('currency', 'USD')->where('type', 'pending_earning')->sum('amount_micros') : 0,
-            'reserved_micros' => $p ? (int) Payout::where('publisher_account_id', $p->id)->where('currency', 'USD')->where('status', 'pending')->sum('amount_micros') : 0,
+            'awaiting_micros' => $p ? (int) DB::table('publisher_ledger_entries')->where('publisher_account_id', $p->id)->where('type', 'pending_earning')->sum('amount_micros') : 0,
+            'reserved_micros' => $p ? (int) Payout::where('publisher_account_id', $p->id)->where('status', 'pending')->sum('amount_micros') : 0,
         ];
         $row['minimum_micros'] = (int) config('publisher.minimum_payout_micros', 50000000);
         $events = PayoutEvent::where('payout_id', $payout->id)->latest('id')->paginate(10, ['id', 'action', 'actor_name', 'details', 'created_at'], 'page', $page);

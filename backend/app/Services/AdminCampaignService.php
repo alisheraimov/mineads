@@ -35,7 +35,6 @@ class AdminCampaignService
         $user = $account?->user;
         $data = [
             'id' => $campaign->id, 'name' => $campaign->name, 'status' => $campaign->trashed() ? 'deleted' : $campaign->status,
-            'pricing_model' => $campaign->pricing_model, 'currency' => $account?->currency ?? 'USD',
             'advertiser' => $user ? ['id' => $user->id, 'name' => $user->name, 'email' => $user->email, 'status' => $user->trashed() ? 'deleted' : $user->status] : null,
             'starts_at' => $campaign->starts_at?->toISOString(), 'ends_at' => $campaign->ends_at?->toISOString(),
             'created_at' => $campaign->created_at->toISOString(), 'updated_at' => $campaign->updated_at->toISOString(), 'deleted_at' => $campaign->deleted_at?->toISOString(),

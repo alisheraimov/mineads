@@ -1,8 +1,10 @@
 "use client";
 
+import { formatUsd as money } from "@/lib/money";
+
 import { useCallback, useEffect, useId, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/lib/navigation";
 import { ArrowRight, CalendarDays, ChevronRight, Info, Loader2, RefreshCw, ShieldCheck } from "lucide-react";
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import { AccountHeader } from "@/components/account/account-header";
@@ -21,7 +23,6 @@ const periods: Record<AdminPeriod, string> = {
   today: "Today", yesterday: "Yesterday", last7: "Last 7 days", last30: "Last 30 days", custom: "Custom range",
 };
 const number = (value: number) => value.toLocaleString("en-US");
-const money = (value: number, currency = "USD") => new Intl.NumberFormat("en-US", { style: "currency", currency }).format(value / 1_000_000);
 const date = (value: string) => new Date(value).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" });
 const time = (value: string) => new Date(value).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", timeZone: "UTC" });
 
@@ -201,9 +202,9 @@ export function AdminDashboard() {
                     <Metric label="Reported impressions" value={number(p.metrics.reported_impressions)} caption="Received during selected period" />
                     <Metric label="Validated impressions" value={number(p.metrics.validated_impressions)} caption="Processed during selected period" />
                     <Metric label="Invalid impressions" value={number(p.metrics.invalid_impressions)} caption={number(p.metrics.invalid_rate) + "% of processed impressions"} />
-                    {adminCan(user, "admin.finance.view") && <><Metric label="Advertiser spend" value={money(p.metrics.spend_micros, p.currency)} caption="Validated impressions · USD" />
-                    <Metric label="Publisher earnings" value={money(p.metrics.earnings_micros, p.currency)} caption="Includes earnings awaiting release" />
-                    <Metric label="Platform fee" value={money(p.metrics.fee_micros, p.currency)} caption="Before operating and payment costs" /></>}
+                    {adminCan(user, "admin.finance.view") && <><Metric label="Advertiser spend" value={money(p.metrics.spend_micros)} caption="Validated impressions · USD" />
+                    <Metric label="Publisher earnings" value={money(p.metrics.earnings_micros)} caption="Includes earnings awaiting release" />
+                    <Metric label="Platform fee" value={money(p.metrics.fee_micros)} caption="Before operating and payment costs" /></>}
                   </div>
                   <PerformanceChart performance={p} canViewFinance={adminCan(user, "admin.finance.view")} />
                 </> : !performance.error && <><MetricSkeleton count={6} /><div role="status" aria-label="Loading performance chart" className="h-80 animate-pulse rounded-lg border bg-muted" /></>}
@@ -213,7 +214,7 @@ export function AdminDashboard() {
                 {s ? <div className="grid gap-4 xl:grid-cols-3">
                   <Attention title="Creative reviews" value={s.pending_creatives ? number(s.pending_creatives) + " pending" : "All caught up"} detail={s.oldest_pending_creative_at ? "Oldest submission · " + date(s.oldest_pending_creative_at) + " at " + time(s.oldest_pending_creative_at) + " UTC" : "No creatives awaiting review"} action="Review creatives" onClick={adminCan(user, "admin.creatives.view") || adminCan(user, "admin.creatives.review") ? () => router.push("/admin/creatives") : undefined} />
                   <Attention title="Unhealthy servers" value={s.unhealthy_servers ? number(s.unhealthy_servers) + " servers" : "All healthy"} detail={s.offline_servers + " offline · " + s.high_invalid_rate_servers + " high invalid rate · counts may overlap"} action="Inspect servers" onClick={adminCan(user, "admin.servers.view") ? () => router.push("/admin/servers") : undefined} />
-                  {adminCan(user, "admin.finance.view") && <Attention title="Pending payouts" value={s.pending_payouts ? number(s.pending_payouts) + " pending" : "All caught up"} detail={s.pending_payout_amounts.length ? s.pending_payout_amounts.map(amount => money(amount.amount_micros, amount.currency)).join(" · ") + " awaiting processing" : "No payouts awaiting processing"} action="View payouts" onClick={() => router.push("/admin/finance/payouts?status=pending")} />}
+                  {adminCan(user, "admin.finance.view") && <Attention title="Pending payouts" value={s.pending_payouts ? number(s.pending_payouts) + " pending" : "All caught up"} detail={s.pending_payouts ? money(s.pending_payout_micros) + " awaiting processing" : "No payouts awaiting processing"} action="View payouts" onClick={() => router.push("/admin/finance/payouts?status=pending")} />}
                 </div> : snapshot.error ? <p className="text-sm text-muted-foreground">Queues are unavailable until the marketplace snapshot loads.</p> : <MetricSkeleton count={3} />}
                 {s && <details className="text-xs text-muted-foreground"><summary className="w-fit cursor-pointer">Server health rules</summary><p className="mt-2 max-w-3xl leading-5">An active server is offline without a heartbeat in the last {s.health_rules.heartbeat_timeout_seconds / 60} minutes. It is also unhealthy when more than {s.health_rules.invalid_rate_percent}% of at least {s.health_rules.minimum_processed_impressions} processed impressions are invalid over the last 24 hours. A server matching both conditions is counted once.</p></details>}
               </section>
@@ -290,7 +291,7 @@ function PerformanceChart({ performance, canViewFinance }: { performance: AdminP
             </defs>
             <CartesianGrid vertical={false} /><XAxis dataKey="label" tickLine={false} axisLine={false} minTickGap={32} tickMargin={12} />
             <YAxis width={56} tickLine={false} axisLine={false} allowDecimals={monetary} tickFormatter={value => monetary ? "$" + (Number(value) / 1_000_000).toLocaleString("en-US", { maximumFractionDigits: 2 }) : Intl.NumberFormat("en-US", { notation: "compact" }).format(value)} />
-            <ChartTooltip content={<ChartTooltipContent valueFormatter={value => typeof value === "number" ? monetary ? money(value, performance.currency) : number(value) : value} labelFormatter={(_, payload) => {
+            <ChartTooltip content={<ChartTooltipContent valueFormatter={value => typeof value === "number" ? monetary ? money(value) : number(value) : value} labelFormatter={(_, payload) => {
               const timestamp = payload[0]?.payload?.date;
               return typeof timestamp === "string" ? date(timestamp) + (performance.period.interval === "hour" ? " · " + time(timestamp) : "") + " UTC" : "";
             }} />} />

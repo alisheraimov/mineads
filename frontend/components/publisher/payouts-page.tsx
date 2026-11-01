@@ -58,13 +58,13 @@ export function PayoutsPage() {
     {loading && <p role="status" className="flex items-center gap-2 text-sm text-muted-foreground"><Loader2 className="size-4 animate-spin" aria-hidden="true" />Loading payouts…</p>}
     {data && <>
       <section aria-label="Payout summary" className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <SummaryMetric label="Available for payout" value={money(data.metrics.available_payout_micros, data.account.currency)} caption="Closed billing periods · Eligible unpaid earnings" />
-        <SummaryMetric label="Pending earnings" value={money(data.metrics.pending_earnings_micros, data.account.currency)} caption="Current calendar month estimate" />
-        <SummaryMetric label="Next payout window" value={windowLabel(data.policy.estimated_window_start, data.policy.estimated_window_end)} caption={`Estimated · If ${money(data.policy.minimum_payout_micros, data.account.currency)} minimum is met`} />
-        <SummaryMetric label="Lifetime paid" value={money(data.metrics.lifetime_paid_micros, data.account.currency)} caption="All completed payouts" />
+        <SummaryMetric label="Available for payout" value={money(data.metrics.available_payout_micros)} caption="Closed billing periods · Eligible unpaid earnings" />
+        <SummaryMetric label="Pending earnings" value={money(data.metrics.pending_earnings_micros)} caption="Current calendar month estimate" />
+        <SummaryMetric label="Next payout window" value={windowLabel(data.policy.estimated_window_start, data.policy.estimated_window_end)} caption={`Estimated · If ${money(data.policy.minimum_payout_micros)} minimum is met`} />
+        <SummaryMetric label="Lifetime paid" value={money(data.metrics.lifetime_paid_micros)} caption="All completed payouts" />
       </section>
       <p className="text-xs leading-5 text-muted-foreground">
-        Minimum payout: {money(data.policy.minimum_payout_micros, data.account.currency)}. Payouts are arranged after a {data.policy.hold_days_min === data.policy.hold_days_max ? data.policy.hold_days_max : `${data.policy.hold_days_min}–${data.policy.hold_days_max}`} day hold following month-end. {data.policy.threshold_met ? "Your eligible balance meets the minimum." : "Your eligible balance is below the minimum."} Processing windows are estimates and depend on finalized earnings and payout eligibility. All dates are in UTC.
+        Minimum payout: {money(data.policy.minimum_payout_micros)}. Payouts are arranged after a {data.policy.hold_days_min === data.policy.hold_days_max ? data.policy.hold_days_max : `${data.policy.hold_days_min}–${data.policy.hold_days_max}`} day hold following month-end. {data.policy.threshold_met ? "Your eligible balance meets the minimum." : "Your eligible balance is below the minimum."} Processing windows are estimates and depend on finalized earnings and payout eligibility. All dates are in UTC.
       </p>
       <section className={panelClass} aria-labelledby="payout-method-title">
         <h2 id="payout-method-title" className="font-semibold">Payout method</h2>
@@ -74,7 +74,7 @@ export function PayoutsPage() {
         </div>
         <dl className="grid gap-5 text-sm sm:grid-cols-3">
           <div><dt className="text-xs text-muted-foreground">Connected account</dt><dd className="mt-2">—</dd></div>
-          <div><dt className="text-xs text-muted-foreground">Payout currency</dt><dd className="mt-2">{data.account.currency}</dd></div>
+          <div><dt className="text-xs text-muted-foreground">Payout currency</dt><dd className="mt-2">USD</dd></div>
           <div><dt className="text-xs text-muted-foreground">Connection status</dt><dd className="mt-2">Stripe setup is not available yet</dd></div>
         </dl>
       </section>
@@ -97,14 +97,14 @@ export function PayoutsPage() {
             <thead className="border-b bg-muted/40 text-muted-foreground"><tr>{["Period", "Amount (net)", "Status", "Method", "Created", "Paid"].map((label) => <th key={label} scope="col" className="px-4 py-4 font-medium">{label}</th>)}</tr></thead>
             <tbody>{data.history.map((payout) => <tr key={payout.id} className="border-b last:border-0">
               <td className="px-4 py-4">{dateLabel(payout.period_start)}–{dateLabel(payout.period_end)}</td>
-              <td className="whitespace-nowrap px-4 py-4 tabular-nums">{money(payout.amount_micros, payout.currency)}</td>
+              <td className="whitespace-nowrap px-4 py-4 tabular-nums">{money(payout.amount_micros)}</td>
               <td className="px-4 py-4"><Badge variant="secondary" className={statusStyles[payout.status]}>{titleCase(payout.status)}</Badge></td>
               <td className="px-4 py-4">{titleCase(payout.provider)}</td><td className="whitespace-nowrap px-4 py-4">{dateLabel(payout.created_at)}</td><td className="whitespace-nowrap px-4 py-4">{payout.paid_at ? dateLabel(payout.paid_at) : <span aria-label="Not paid">—</span>}</td>
             </tr>)}{data.history.length === 0 && <tr><td colSpan={6} className="px-6 py-12 text-center text-sm text-muted-foreground">{year === "all" && status === "all" ? "No payouts yet. Your payout history will appear here once payouts are arranged." : "No payouts match these filters."}</td></tr>}</tbody>
           </table>
         </div>
         <div className="flex flex-wrap items-center justify-between gap-4 text-xs text-muted-foreground">
-          <p>{data.pagination.total} {data.pagination.total === 1 ? "payout" : "payouts"} · Net amounts in {data.account.currency} · Unpaid payouts have no paid date</p><p>As of {dateLabel(data.generated_at)}</p>
+          <p>{data.pagination.total} {data.pagination.total === 1 ? "payout" : "payouts"} · Net amounts in USD · Unpaid payouts have no paid date</p><p>As of {dateLabel(data.generated_at)}</p>
         </div>
         {data.pagination.last_page > 1 && <nav aria-label="Payout history pages" className="flex items-center justify-end gap-3 text-sm"><Button variant="outline" disabled={loading || page <= 1} onClick={() => setPage((value) => value - 1)}>Previous</Button><span>Page {page} of {data.pagination.last_page}</span><Button variant="outline" disabled={loading || page >= data.pagination.last_page} onClick={() => setPage((value) => value + 1)}>Next</Button></nav>}
       </section>

@@ -9,7 +9,7 @@ export type AdminServer = {
 export type ServerEvent = { id: number; actor_name: string; action: string; created_at: string; details: { host: string; previous_host?: string; name: string; category: string; status: string; review_status: string; review_reason?: string | null; suspension_reason?: string | null } };
 export type AdminServerDetail = AdminServer & { version: string; can_manage: boolean; can_view_money: boolean; can_view_publisher: boolean; history: ServerEvent[] };
 export type ServerListResult = { data: AdminServer[]; meta: PageMeta; counts: Record<string, number>; can_view_publisher: boolean };
-export type PublisherRow = PublisherIdentity & { servers_count: number; active_servers_count: number; last_heartbeat_at: string | null; earnings_micros?: number; currency: string };
+export type PublisherRow = PublisherIdentity & { servers_count: number; active_servers_count: number; last_heartbeat_at: string | null; earnings_micros?: number };
 export type PublisherListResult = { data: PublisherRow[]; meta: PageMeta; can_view_money: boolean; can_view_publisher: boolean };
 export type ServerActivity = {
  metrics: { valid: number; invalid: number; pending: number; invalid_rate: number | null; earnings_micros?: number };

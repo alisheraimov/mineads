@@ -13,7 +13,6 @@ class PublisherAccountFactory extends Factory
             'user_id' => User::factory()->state(['role' => 'publisher']),
             'name' => fake()->company(),
             'status' => 'active',
-            'currency' => 'USD',
         ];
     }
 }

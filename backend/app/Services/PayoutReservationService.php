@@ -16,13 +16,13 @@ class PayoutReservationService
     public function reserve(Payout $payout, PublisherAccount $publisher): void
     {
         $entries = PublisherLedgerEntry::query()->where('publisher_account_id', $publisher->id)
-            ->where('currency', $payout->currency)->where('type', 'payable')
+            ->where('type', 'payable')
             ->where('amount_micros', '>', 0)->orderBy('created_at')->orderBy('id')->lockForUpdate()->get();
         $used = DB::table('payout_earnings as allocation')->join('payouts', 'payouts.id', '=', 'allocation.payout_id')
-            ->where('payouts.publisher_account_id', $publisher->id)->where('payouts.currency', $payout->currency)
+            ->where('payouts.publisher_account_id', $publisher->id)
             ->where('payouts.id', '!=', $payout->id)->whereIn('payouts.status', ['pending', 'processing', 'paid'])
             ->selectRaw('publisher_ledger_entry_id, SUM(allocation.amount_micros) as amount')->groupBy('publisher_ledger_entry_id')->pluck('amount', 'publisher_ledger_entry_id');
-        $legacy = (int) Payout::query()->where('publisher_account_id', $publisher->id)->where('currency', $payout->currency)
+        $legacy = (int) Payout::query()->where('publisher_account_id', $publisher->id)
             ->where('id', '!=', $payout->id)->whereIn('status', ['pending', 'processing', 'paid'])
             ->whereNotIn('id', DB::table('payout_earnings')->select('payout_id'))->sum('amount_micros');
         DB::table('payout_earnings')->where('payout_id', $payout->id)->delete();

@@ -5,7 +5,6 @@ export type AdvertiserDashboard = {
     id: number;
     name: string;
     status: "active" | "suspended";
-    currency: string;
   };
   period: {
     today_start: string;

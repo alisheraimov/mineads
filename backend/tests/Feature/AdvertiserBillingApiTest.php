@@ -70,15 +70,14 @@ class AdvertiserBillingApiTest extends TestCase
             ->assertJsonPath('data.low_balance', true)->assertJsonPath('data.funding_available', false);
     }
 
-    public function test_balance_uses_all_posted_entries_but_excludes_other_accounts_and_currencies(): void
+    public function test_balance_uses_all_posted_usd_entries_but_excludes_other_accounts(): void
     {
         $account = $this->signIn();
         $this->entry($account, '2026-10-01', 'deposit', 50000000);
         $this->entry(AdvertiserAccount::factory()->create(), '2026-10-01', 'deposit', 900000000);
         $this->entry($account, '2026-10-15', 'deposit', 10000000)->update(['created_at' => '2026-10-15 23:00:00']);
-        $foreignCurrency = $this->entry($account, '2026-10-01', 'deposit', 900000000);
-        $foreignCurrency->update(['currency' => 'EUR']);
-        $this->getJson('/api/advertiser/billing?advertiser_account_id=999')->assertOk()->assertJsonPath('data.metrics.available_balance_micros', 60000000)->assertJsonPath('data.pagination.total', 1);
+        $this->getJson('/api/advertiser/billing?advertiser_account_id=999')->assertOk()->assertJsonPath('data.metrics.available_balance_micros', 60000000)->assertJsonPath('data.pagination.total', 1)
+            ->assertJsonMissingPath('data.account.currency');
     }
 
     public function test_snapshot_cache_expires_and_contains_only_serializable_plain_data(): void
@@ -126,12 +125,12 @@ class AdvertiserBillingApiTest extends TestCase
         $user = User::factory()->create(['role' => 'advertiser']);
         $this->actingAs($user, 'sanctum');
 
-        return AdvertiserAccount::factory()->create(['user_id' => $user->id, 'status' => 'active', 'currency' => 'USD']);
+        return AdvertiserAccount::factory()->create(['user_id' => $user->id, 'status' => 'active']);
     }
 
     private function entry(AdvertiserAccount $account, string $date, string $type, int $amount): AdvertiserLedgerEntry
     {
         return AdvertiserLedgerEntry::factory()->create(['advertiser_account_id' => $account->id, 'campaign_id' => null,
-            'type' => $type, 'amount_micros' => $amount, 'currency' => 'USD', 'created_at' => $date.' 00:00:00']);
+            'type' => $type, 'amount_micros' => $amount, 'created_at' => $date.' 00:00:00']);
     }
 }

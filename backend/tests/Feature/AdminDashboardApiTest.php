@@ -39,7 +39,7 @@ class AdminDashboardApiTest extends TestCase
         $admin->assignRole('ad-ops');
 
         $this->actingAs($admin, 'sanctum')->getJson('/api/admin/dashboard')
-            ->assertOk()->assertJsonMissingPath('data.pending_payouts')->assertJsonMissingPath('data.pending_payout_amounts');
+            ->assertOk()->assertJsonMissingPath('data.pending_payouts')->assertJsonMissingPath('data.pending_payout_micros');
         $this->getJson('/api/admin/dashboard/performance')
             ->assertOk()->assertJsonPath('data.metrics.validated_impressions', 0)
             ->assertJsonMissingPath('data.metrics.spend_micros')->assertJsonMissingPath('data.chart.0.earnings_micros');
@@ -119,8 +119,8 @@ class AdminDashboardApiTest extends TestCase
         Server::factory()->create(['status' => 'suspended']);
         $deletedServer = Server::factory()->create();
         $deletedServer->delete();
-        Payout::factory()->create(['status' => 'pending', 'currency' => 'USD', 'amount_micros' => 12000000]);
-        Payout::factory()->create(['status' => 'pending', 'currency' => 'EUR', 'amount_micros' => 5000000]);
+        Payout::factory()->create(['status' => 'pending', 'amount_micros' => 12000000]);
+        Payout::factory()->create(['status' => 'pending', 'amount_micros' => 5000000]);
         Payout::factory()->create(['status' => 'processing', 'amount_micros' => 90000000]);
 
         $this->actingAs($admin, 'sanctum')->getJson('/api/admin/dashboard?from=2000-01-01')
@@ -133,9 +133,7 @@ class AdminDashboardApiTest extends TestCase
             ->assertJsonPath('data.high_invalid_rate_servers', 1)
             ->assertJsonPath('data.unhealthy_servers', 2)
             ->assertJsonPath('data.pending_payouts', 2)
-            ->assertJsonPath('data.pending_payout_amounts.0.currency', 'EUR')
-            ->assertJsonPath('data.pending_payout_amounts.0.amount_micros', 5000000)
-            ->assertJsonPath('data.pending_payout_amounts.1.amount_micros', 12000000);
+            ->assertJsonPath('data.pending_payout_micros', 17000000);
     }
 
     public static function healthSamples(): array
