@@ -11,6 +11,8 @@ use App\Models\User;
 use App\Models\ValidatedImpression;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use PHPUnit\Framework\Attributes\TestWith;
 use Tests\TestCase;
 
@@ -34,9 +36,28 @@ class AdvertiserCampaignApiTest extends TestCase
         $response->assertCreated()->assertJsonPath('data.status', 'active')->assertJsonPath('data.daily_budget_micros', 80000000);
         $id = $response->json('data.id');
         $this->assertDatabaseHas('campaigns', ['id' => $id, 'advertiser_account_id' => $account->id, 'name' => 'Winter realms', 'status' => 'active', 'total_budget_micros' => 1200000000]);
-        $this->assertDatabaseCount('campaign_targets', 8);
-        $this->assertDatabaseHas('campaign_targets', ['campaign_id' => $id, 'country_code' => 'BR', 'language' => 'en', 'server_category' => 'skyblock']);
+        $this->assertDatabaseCount('campaign_targets', 4);
+        $this->assertDatabaseHas('campaign_targets', ['campaign_id' => $id, 'country_code' => 'BR', 'server_category' => 'skyblock']);
         $this->getJson('/api/advertiser/campaigns/'.$id)->assertOk()->assertJsonPath('data.delivery_eligible', false)->assertJsonFragment(['No approved creative']);
+    }
+
+    public function test_language_removal_merges_duplicate_targets_and_preserves_country_category_combinations(): void
+    {
+        $campaign = Campaign::factory()->create();
+        $migration = require database_path('migrations/2026_11_03_054837_remove_language_from_campaign_targets_table.php');
+        $migration->down();
+        foreach ([['US', 'en', 'survival'], ['US', 'pt', 'survival'], ['BR', 'pt', 'skyblock'], [null, 'en', null], [null, 'pt', null]] as [$country, $language, $category]) {
+            DB::table('campaign_targets')->insert(['campaign_id' => $campaign->id, 'country_code' => $country, 'language' => $language, 'server_category' => $category]);
+        }
+
+        $migration->up();
+
+        $this->assertFalse(Schema::hasColumn('campaign_targets', 'language'));
+        $this->assertDatabaseCount('campaign_targets', 3);
+        $this->assertDatabaseHas('campaign_targets', ['campaign_id' => $campaign->id, 'country_code' => 'US', 'server_category' => 'survival']);
+        $this->assertDatabaseHas('campaign_targets', ['campaign_id' => $campaign->id, 'country_code' => 'BR', 'server_category' => 'skyblock']);
+        $this->assertDatabaseHas('campaign_targets', ['campaign_id' => $campaign->id, 'country_code' => null, 'server_category' => null]);
+        $this->assertDatabaseMissing('campaign_targets', ['campaign_id' => $campaign->id, 'country_code' => 'US', 'server_category' => 'skyblock']);
     }
 
     public function test_list_is_scoped_searchable_paginated_and_totals_are_not_multiplied_by_creatives(): void
@@ -64,7 +85,7 @@ class AdvertiserCampaignApiTest extends TestCase
         $account = $this->signInAdvertiser();
         $campaign = Campaign::factory()->create(['advertiser_account_id' => $account->id, 'status' => 'active', 'starts_at' => '2026-10-01', 'ends_at' => '2026-11-01', 'daily_budget_micros' => 10000000, 'total_budget_micros' => 100000000]);
         $creative = AdCreative::factory()->create(['campaign_id' => $campaign->id, 'status' => 'approved', 'language' => 'en']);
-        CampaignTarget::factory()->create(['campaign_id' => $campaign->id, 'country_code' => 'US', 'language' => 'en', 'server_category' => 'survival']);
+        CampaignTarget::factory()->create(['campaign_id' => $campaign->id, 'country_code' => 'US', 'server_category' => 'survival']);
         AdvertiserLedgerEntry::factory()->create(['advertiser_account_id' => $account->id, 'campaign_id' => null, 'type' => 'deposit', 'amount_micros' => 150000000]);
         foreach (['2026-10-13 12:00:00', '2026-10-15 00:00:00'] as $date) {
             AdvertiserLedgerEntry::factory()->create(['advertiser_account_id' => $account->id, 'campaign_id' => $campaign->id, 'type' => 'spend', 'amount_micros' => -2000000, 'created_at' => $date]);
@@ -106,7 +127,7 @@ class AdvertiserCampaignApiTest extends TestCase
         $this->putJson('/api/advertiser/campaigns/'.$campaign->id, $this->payload())->assertOk()->assertJsonPath('data.status', 'paused');
 
         $this->assertDatabaseMissing('campaign_targets', ['campaign_id' => $campaign->id, 'country_code' => 'DE']);
-        $this->assertDatabaseCount('campaign_targets', 8);
+        $this->assertDatabaseCount('campaign_targets', 4);
         $this->assertDatabaseHas('campaigns', ['id' => $campaign->id, 'name' => 'Winter realms']);
     }
 
@@ -125,7 +146,6 @@ class AdvertiserCampaignApiTest extends TestCase
     #[TestWith(['daily_budget_micros', -1, 'daily_budget_micros'])]
     #[TestWith(['total_budget_micros', 10000, 'total_budget_micros'])]
     #[TestWith(['countries', ['XX'], 'countries.0'])]
-    #[TestWith(['languages', [], 'languages'])]
     #[TestWith(['server_categories', ['unknown'], 'server_categories.0'])]
     #[TestWith(['ends_at', '2026-01-01T00:00:00Z', 'ends_at'])]
     public function test_invalid_fields_return_422_without_creating_records(string $field, mixed $value, string $error): void
@@ -172,15 +192,15 @@ class AdvertiserCampaignApiTest extends TestCase
     {
         $account = $this->signInAdvertiser();
         $campaign = Campaign::factory()->create(['advertiser_account_id' => $account->id]);
-        $first = CampaignTarget::factory()->create(['campaign_id' => $campaign->id, 'country_code' => 'US', 'language' => 'en', 'server_category' => 'survival']);
-        $second = CampaignTarget::factory()->create(['campaign_id' => $campaign->id, 'country_code' => 'BR', 'language' => 'pt', 'server_category' => 'skyblock']);
+        $first = CampaignTarget::factory()->create(['campaign_id' => $campaign->id, 'country_code' => 'US', 'server_category' => 'survival']);
+        $second = CampaignTarget::factory()->create(['campaign_id' => $campaign->id, 'country_code' => 'BR', 'server_category' => 'skyblock']);
 
         $this->putJson('/api/advertiser/campaigns/'.$campaign->id, $this->payload())->assertOk();
 
         $this->assertDatabaseCount('campaign_targets', 2);
         $this->assertModelExists($first);
         $this->assertModelExists($second);
-        $this->assertDatabaseMissing('campaign_targets', ['campaign_id' => $campaign->id, 'country_code' => 'US', 'language' => 'pt']);
+        $this->assertDatabaseMissing('campaign_targets', ['campaign_id' => $campaign->id, 'country_code' => 'US', 'server_category' => 'skyblock']);
     }
 
     public function test_chart_returns_daily_impressions_and_effective_cpm_without_averaging_daily_rates(): void
@@ -216,6 +236,6 @@ class AdvertiserCampaignApiTest extends TestCase
     {
         return ['name' => 'Winter realms', 'starts_at' => '2026-11-01T00:00:00Z', 'ends_at' => '2026-11-30T23:59:00Z',
             'daily_budget_micros' => 80000000, 'total_budget_micros' => 1200000000,
-            'countries' => ['US', 'BR'], 'languages' => ['en', 'pt'], 'server_categories' => ['survival', 'skyblock']];
+            'countries' => ['US', 'BR'], 'server_categories' => ['survival', 'skyblock']];
     }
 }

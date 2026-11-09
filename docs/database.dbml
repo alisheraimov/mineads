@@ -122,14 +122,13 @@ Table campaign_targets {
   id bigint [pk, increment]
   campaign_id bigint [not null]
   country_code varchar(2) [null]
-  language varchar(16) [null]
   server_category varchar [null]
   created_at timestamp [null]
   updated_at timestamp [null]
 
   indexes {
-    (country_code, language)
-    (campaign_id, country_code, language)
+    country_code
+    (campaign_id, country_code)
     (campaign_id, server_category)
   }
 }
@@ -212,6 +211,9 @@ Table ad_deliveries {
   requested_player_count int [not null, default: 0]
   decision varchar
   impression_token_hash varchar [unique, null]
+  click_token_hash varchar(64) [unique, null]
+  click_destination text [null]
+  click_expires_at timestamp [null]
   expires_at timestamp [null]
   requested_at timestamp [not null, default: `now()`]
 
@@ -222,6 +224,20 @@ Table ad_deliveries {
     (server_id, requested_at)
     (campaign_id, requested_at)
     (audience_country, audience_language)
+  }
+}
+
+Table raw_click_events {
+  id bigint [pk, increment]
+  ad_delivery_id bigint [not null]
+  visitor_hash varchar(64) [not null, note: 'HMAC of IP and user agent; no raw IP stored']
+  is_unique boolean [not null]
+  exclusion_reason varchar [null, note: 'duplicate or automated']
+  received_at timestamp [not null]
+
+  indexes {
+    received_at
+    (ad_delivery_id, visitor_hash, is_unique)
   }
 }
 
@@ -421,6 +437,7 @@ Ref: ad_deliveries.campaign_id > campaigns.id [delete: set null]
 Ref: ad_deliveries.creative_id > ad_creatives.id [delete: set null]
 Ref: ad_deliveries.rate_tier_id > rate_tiers.id [delete: set null]
 Ref: raw_impression_events.ad_delivery_id > ad_deliveries.id [delete: cascade]
+Ref: raw_click_events.ad_delivery_id > ad_deliveries.id [delete: cascade]
 Ref: raw_impression_events.server_id > servers.id [delete: cascade]
 Ref: raw_impression_events.player_session_id > player_sessions.id [delete: set null]
 Ref: validated_impressions.raw_impression_event_id > raw_impression_events.id [delete: cascade]

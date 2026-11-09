@@ -162,12 +162,11 @@ class DemoDataSeeder extends Seeder
                     : '[Patrocinado] Descubra novas comunidades Minecraft no CraftList.',
             ]);
 
-            foreach ([['US', 'en', 'survival'], ['GB', 'en', null], ['BR', 'pt', 'skyblock']] as $target) {
+            foreach ([['US', 'survival'], ['GB', null], ['BR', 'skyblock']] as $target) {
                 CampaignTarget::factory()->create([
                     'campaign_id' => $campaign->id,
                     'country_code' => $target[0],
-                    'language' => $target[1],
-                    'server_category' => $target[2],
+                    'server_category' => $target[1],
                 ]);
             }
 

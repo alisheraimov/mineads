@@ -8,6 +8,7 @@ use App\Models\AdvertiserAccount;
 use App\Models\AdvertiserLedgerEntry;
 use App\Models\Campaign;
 use App\Models\ValidatedImpression;
+use App\Services\ClickMetricsService;
 use Carbon\CarbonInterface;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -56,6 +57,8 @@ class DashboardController extends Controller
         $spendMonthMicros = $this->spendMicros($advertiser->id, $monthStart, $now);
         $impressionsToday = $this->impressionCount($advertiser->id, $todayStart, $now);
         $impressionsMonth = $this->impressionCount($advertiser->id, $monthStart, $now);
+        $clickService = app(ClickMetricsService::class);
+        $clickMetrics = $clickService->metrics($clickService->query($advertiser->id)->whereBetween('clicks.received_at', [$monthStart, $now]), $impressionsMonth);
 
         return [
             'account' => [
@@ -68,6 +71,9 @@ class DashboardController extends Controller
                 'month_end' => $now->toISOString(),
             ],
             'metrics' => [
+                'clicks_month' => $clickMetrics['clicks'],
+                'raw_clicks_month' => $clickMetrics['raw_clicks'],
+                'ctr_month' => $clickMetrics['ctr'],
                 'available_balance_micros' => $balanceMicros,
                 'active_campaigns' => $this->campaignCount($advertiser->id, 'active'),
                 'active_creatives' => $this->creativeCount($advertiser->id, 'approved', activeCampaignsOnly: true),

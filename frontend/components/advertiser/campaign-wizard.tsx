@@ -31,7 +31,6 @@ import {
 } from "@/lib/campaigns";
 import {
   displayCountry,
-  displayLanguage,
   dollarsToMicros,
   formatDate,
   formatMicros,
@@ -51,7 +50,6 @@ type Draft = {
   daily: string;
   total: string;
   countries: string[];
-  languages: string[];
   server_categories: string[];
 };
 const steps = ["Basics", "Targeting", "Budget", "Review & submit"];
@@ -67,7 +65,6 @@ function initialDraft(): Draft {
     daily: "",
     total: "",
     countries: [],
-    languages: [],
     server_categories: [],
   };
 }
@@ -108,7 +105,6 @@ export function CampaignWizard({ id }: { id?: string }) {
                 ? ""
                 : (data.total_budget_micros / 1_000_000).toFixed(2),
             countries: data.countries,
-            languages: data.languages,
             server_categories: data.server_categories,
           });
         }
@@ -150,11 +146,9 @@ export function CampaignWizard({ id }: { id?: string }) {
     if (current === 1) {
       if (
         !draft.countries.length ||
-        !draft.languages.length ||
         !draft.server_categories.length
       )
-        return "Select at least one country, language and server category.";
-      if (draft.languages.length > 20) return "Select up to 20 languages.";
+        return "Select at least one country and server category.";
     }
     if (current === 2) {
       const daily = dollarsToMicros(draft.daily);
@@ -200,7 +194,6 @@ export function CampaignWizard({ id }: { id?: string }) {
           daily_budget_micros: dollarsToMicros(draft.daily)!,
           total_budget_micros: dollarsToMicros(draft.total)!,
           countries: draft.countries,
-          languages: draft.languages,
           server_categories: draft.server_categories,
         },
         id,
@@ -341,7 +334,7 @@ export function CampaignWizard({ id }: { id?: string }) {
                       Audience targeting
                     </h2>
                     <p className="mt-1 text-xs text-muted-foreground">
-                      Choose countries, languages and server categories.
+                      Choose countries and server categories.
                     </p>
                   </div>
                   <MultiSelect
@@ -350,14 +343,6 @@ export function CampaignWizard({ id }: { id?: string }) {
                     options={options.countries}
                     name={displayCountry}
                     onChange={(values) => change("countries", values)}
-                  />
-                  <MultiSelect
-                    label="Languages"
-                    values={draft.languages}
-                    options={options.languages}
-                    name={displayLanguage}
-                    max={20}
-                    onChange={(values) => change("languages", values)}
                   />
                   <fieldset className="space-y-3">
                     <legend className="text-sm font-medium">
@@ -388,8 +373,8 @@ export function CampaignWizard({ id }: { id?: string }) {
                     </div>
                   </fieldset>
                   <p className="text-sm text-muted-foreground">
-                    Targeting narrows where a campaign is eligible to serve. Use
-                    creative languages that match your selected audience.
+                    Targeting narrows where a campaign is eligible to serve.
+                    Each creative&apos;s language determines which audience languages it can reach.
                   </p>
                 </section>
               )}
@@ -482,10 +467,6 @@ export function CampaignWizard({ id }: { id?: string }) {
                         [
                           "Countries",
                           draft.countries.map(displayCountry).join(", "),
-                        ],
-                        [
-                          "Languages",
-                          draft.languages.map(displayLanguage).join(", "),
                         ],
                         [
                           "Server categories",

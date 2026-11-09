@@ -167,6 +167,7 @@ class PluginApiController extends Controller
                 }
 
                 $plainImpressionToken = 'imp_'.Str::random(48);
+                $clickToken = $creative->click_url ? Str::random(48) : null;
 
                 $delivery = AdDelivery::query()->create([
                     'server_id' => $server->id,
@@ -180,6 +181,9 @@ class PluginApiController extends Controller
                     'requested_player_count' => $eligiblePlayerCount,
                     'decision' => 'served',
                     'impression_token_hash' => hash('sha256', $plainImpressionToken),
+                    'click_token_hash' => $clickToken ? hash('sha256', $clickToken) : null,
+                    'click_destination' => $creative->click_url,
+                    'click_expires_at' => $clickToken ? now()->addDays(30) : null,
                     'expires_at' => now()->addMinutes(5),
                     'requested_at' => now(),
                 ]);
@@ -193,11 +197,12 @@ class PluginApiController extends Controller
                     'placement' => $data['placement'],
                     'message' => [
                         'plain' => $creative->message_text,
-                        'click_url' => $creative->click_url,
+                        'click_url' => $clickToken ? route('clicks.redirect', ['token' => $clickToken]) : null,
                     ],
                     'tracking' => [
                         'impression_token' => $plainImpressionToken,
                         'expires_at' => $delivery->expires_at?->toISOString(),
+                        'click_expires_at' => $delivery->click_expires_at?->toISOString(),
                     ],
                 ];
             })->values();
@@ -396,18 +401,12 @@ class PluginApiController extends Controller
                         }
                     });
             })
-            ->whereHas('targets', function ($query) use ($server, $country, $language) {
+            ->whereHas('targets', function ($query) use ($server, $country) {
                 $query->where(function ($query) use ($country) {
                     $query->whereNull('country_code');
 
                     if ($country) {
                         $query->orWhere('country_code', $country);
-                    }
-                })->where(function ($query) use ($language) {
-                    $query->whereNull('language');
-
-                    if ($language) {
-                        $query->orWhere('language', $language);
                     }
                 })->where(function ($query) use ($server) {
                     $query->whereNull('server_category');

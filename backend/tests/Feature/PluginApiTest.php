@@ -21,11 +21,66 @@ use App\Services\ImpressionValidationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\Attributes\TestWith;
 use Tests\TestCase;
 
 class PluginApiTest extends TestCase
 {
     use RefreshDatabase;
+
+    #[TestWith(['en', 'en', 'US', 'survival', true])]
+    #[TestWith(['pt', 'pt', 'US', 'survival', true])]
+    #[TestWith(['pt', 'en', 'US', 'survival', false])]
+    #[TestWith([null, 'en', 'US', 'survival', false])]
+    #[TestWith(['pt', null, 'US', 'survival', true])]
+    #[TestWith([null, null, 'US', 'survival', true])]
+    #[TestWith(['en', 'en', 'BR', 'survival', false])]
+    #[TestWith(['en', 'en', 'US', 'skyblock', false])]
+    public function test_serving_matches_creative_language_and_campaign_country_and_category(?string $audienceLanguage, ?string $creativeLanguage, string $country, string $category, bool $served): void
+    {
+        [$apiToken] = $this->activatedServer();
+        $advertiser = AdvertiserAccount::factory()->create(['user_id' => User::factory()->create(['role' => 'advertiser'])->id]);
+        $campaign = $this->targetedCampaign($advertiser);
+        $campaign->targets()->update(['server_category' => $category]);
+        $creative = $this->approvedCreative($campaign);
+        $creative->update(['language' => $creativeLanguage]);
+        $this->usRateTier();
+        AdvertiserLedgerEntry::factory()->create(['advertiser_account_id' => $advertiser->id, 'campaign_id' => null, 'type' => 'deposit', 'amount_micros' => 10000000]);
+
+        $response = $this->postJson('/api/plugin/v1/ads/request', [
+            'placement' => 'chat',
+            'audiences' => [['audience_id' => 'aud', 'country' => $country, 'language' => $audienceLanguage, 'eligible_player_count' => 1]],
+        ], ['Authorization' => 'Bearer '.$apiToken]);
+
+        $response->assertOk()->assertJsonPath('decisions.0.decision', $served ? 'serve' : 'no_fill');
+        if ($served) {
+            $response->assertJsonPath('decisions.0.creative_id', $creative->id);
+        }
+    }
+
+    public function test_one_campaign_serves_multiple_creative_languages_and_prefers_exact_matches_over_fallback(): void
+    {
+        [$apiToken] = $this->activatedServer();
+        $advertiser = AdvertiserAccount::factory()->create(['user_id' => User::factory()->create(['role' => 'advertiser'])->id]);
+        $campaign = $this->targetedCampaign($advertiser);
+        $fallback = $this->approvedCreative($campaign);
+        $fallback->update(['language' => null]);
+        $english = $this->approvedCreative($campaign);
+        $portuguese = $this->approvedCreative($campaign);
+        $portuguese->update(['language' => 'pt']);
+        $this->usRateTier();
+        AdvertiserLedgerEntry::factory()->create(['advertiser_account_id' => $advertiser->id, 'campaign_id' => null, 'type' => 'deposit', 'amount_micros' => 10000000]);
+
+        $this->postJson('/api/plugin/v1/ads/request', [
+            'placement' => 'chat',
+            'audiences' => collect(['en', 'pt', 'de'])->map(fn ($language) => [
+                'audience_id' => $language, 'country' => 'US', 'language' => $language, 'eligible_player_count' => 1,
+            ])->all(),
+        ], ['Authorization' => 'Bearer '.$apiToken])->assertOk()
+            ->assertJsonPath('decisions.0.creative_id', $english->id)
+            ->assertJsonPath('decisions.1.creative_id', $portuguese->id)
+            ->assertJsonPath('decisions.2.creative_id', $fallback->id);
+    }
 
     public function test_plugin_can_activate_heartbeat_request_ads_and_report_impressions(): void
     {
@@ -61,11 +116,11 @@ class PluginApiTest extends TestCase
             'language' => 'en',
             'status' => 'approved',
             'message_text' => '[Sponsored] Test campaign',
+            'click_url' => 'https://example.com/original',
         ]);
         CampaignTarget::factory()->create([
             'campaign_id' => $campaign->id,
             'country_code' => 'US',
-            'language' => 'en',
             'server_category' => 'survival',
         ]);
         $rateTier = RateTier::factory()->create([
@@ -133,6 +188,13 @@ class PluginApiTest extends TestCase
 
         $deliveryId = $adRequest->json('decisions.0.ad_delivery_id');
         $impressionToken = $adRequest->json('decisions.0.tracking.impression_token');
+        $clickUrl = $adRequest->json('decisions.0.message.click_url');
+        $this->assertStringContainsString('/c/', $clickUrl);
+        $this->assertNotSame($creative->click_url, $clickUrl);
+        $this->assertNotNull($adRequest->json('decisions.0.tracking.click_expires_at'));
+        $creative->update(['click_url' => 'https://example.com/edited']);
+        $this->get($clickUrl, ['User-Agent' => 'Mozilla/5.0'])->assertRedirect('https://example.com/original');
+        $this->assertDatabaseHas('raw_click_events', ['ad_delivery_id' => $deliveryId, 'is_unique' => true]);
 
         $this->postJson('/api/plugin/v1/impressions', [
             'ad_delivery_id' => $deliveryId,
@@ -209,7 +271,6 @@ class PluginApiTest extends TestCase
         CampaignTarget::factory()->create([
             'campaign_id' => $campaign->id,
             'country_code' => 'US',
-            'language' => 'en',
             'server_category' => 'survival',
         ]);
         $rateTier = RateTier::factory()->create([
@@ -665,6 +726,29 @@ class PluginApiTest extends TestCase
         $this->assertDatabaseHas('ad_deliveries', ['campaign_id' => $campaign->id, 'decision' => 'served']);
     }
 
+    public function test_ads_without_a_destination_do_not_issue_click_tokens(): void
+    {
+        $this->freezeTime();
+        [$apiToken] = $this->activatedServer();
+        $advertiser = AdvertiserAccount::factory()->create(['user_id' => User::factory()->create(['role' => 'advertiser'])->id]);
+        $campaign = $this->targetedCampaign($advertiser);
+        $this->approvedCreative($campaign)->update(['click_url' => null]);
+        $this->usRateTier();
+        AdvertiserLedgerEntry::factory()->create(['advertiser_account_id' => $advertiser->id, 'campaign_id' => null, 'type' => 'deposit', 'amount_micros' => 10000000]);
+
+        $response = $this->postJson('/api/plugin/v1/ads/request', [
+            'placement' => 'chat',
+            'audiences' => [['audience_id' => 'aud', 'country' => 'US', 'language' => 'en', 'eligible_player_count' => 1]],
+        ], ['Authorization' => 'Bearer '.$apiToken]);
+
+        $response->assertOk()->assertJsonPath('decisions.0.decision', 'serve')
+            ->assertJsonPath('decisions.0.message.click_url', null)->assertJsonPath('decisions.0.tracking.click_expires_at', null);
+        $this->assertDatabaseHas('ad_deliveries', [
+            'id' => $response->json('decisions.0.ad_delivery_id'),
+            'click_token_hash' => null, 'click_destination' => null, 'click_expires_at' => null,
+        ]);
+    }
+
     private function activatedServer(bool $sendHeartbeat = false): array
     {
         $publisher = PublisherAccount::factory()->create(['user_id' => User::factory()->create(['role' => 'publisher'])->id]);
@@ -707,7 +791,6 @@ class PluginApiTest extends TestCase
         CampaignTarget::factory()->create([
             'campaign_id' => $campaign->id,
             'country_code' => 'US',
-            'language' => 'en',
             'server_category' => 'survival',
         ]);
 

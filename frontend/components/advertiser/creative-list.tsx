@@ -137,6 +137,7 @@ export function CreativesListPage() {
                     "Message / click URL",
                     "Language",
                     "Impressions",
+                    "Clicks / CTR",
                     "Spend",
                     "Status",
                     "Action",
@@ -174,6 +175,12 @@ export function CreativesListPage() {
                         : "All"}
                     </TableCell>
                     <TableCell>{formatNumber(creative.impressions)}</TableCell>
+                    <TableCell>
+                      <p>{formatNumber(creative.clicks)}</p>
+                      <p className="text-muted-foreground">
+                        {creative.ctr == null ? "—" : `${creative.ctr.toFixed(2)}%`}
+                      </p>
+                    </TableCell>
                     <TableCell>{formatMicros(creative.spend_micros)}</TableCell>
                     <TableCell>
                       <CreativeStatus creative={creative} />
@@ -190,7 +197,7 @@ export function CreativesListPage() {
                 {!data.creatives.length && (
                   <TableRow>
                     <TableCell
-                      colSpan={7}
+                      colSpan={8}
                       className="h-32 text-center text-muted-foreground"
                     >
                       No creatives found.

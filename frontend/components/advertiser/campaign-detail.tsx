@@ -1,5 +1,7 @@
 "use client";
 
+import { ClickMetricsSummary } from "@/components/advertiser/click-metrics";
+
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { CircleAlert, Loader2, Pause, Play, Plus } from "lucide-react";
@@ -204,11 +206,6 @@ export function CampaignDetailsPage({ id }: { id: string }) {
                       "All countries",
                   ],
                   [
-                    "Languages",
-                    data.languages.map(displayLanguage).join(", ") ||
-                      "All languages",
-                  ],
-                  [
                     "Server categories",
                     <span key="categories" className="capitalize">
                       {data.server_categories.join(", ") || "All categories"}
@@ -320,6 +317,9 @@ export function CampaignDetailsPage({ id }: { id: string }) {
               <SpendChart data={data.spend_chart} metric={metric} />
             </div>
           </section>
+          <section className="overflow-hidden rounded-lg border bg-card" aria-label="Click performance">
+            <ClickMetricsSummary metrics={data.metrics} />
+          </section>
           <div className="grid gap-4 md:grid-cols-3">
             {[
               [
@@ -384,6 +384,7 @@ export function CampaignDetailsPage({ id }: { id: string }) {
                       "Review status",
                       "Language",
                       "Impressions",
+                      "Clicks",
                       "Spend",
                       "Action",
                     ].map((label) => (
@@ -410,6 +411,7 @@ export function CampaignDetailsPage({ id }: { id: string }) {
                             : "All"}
                         </TableCell>
                         <TableCell>{formatNumber(item.impressions)}</TableCell>
+                        <TableCell>{formatNumber(item.clicks)}</TableCell>
                         <TableCell>{formatMicros(item.spend_micros)}</TableCell>
                         <TableCell>
                           <Button variant="ghost" size="sm" asChild>
@@ -423,7 +425,7 @@ export function CampaignDetailsPage({ id }: { id: string }) {
                   ) : (
                     <TableRow>
                       <TableCell
-                        colSpan={6}
+                        colSpan={7}
                         className="h-24 text-center text-muted-foreground"
                       >
                         No creatives attached yet.

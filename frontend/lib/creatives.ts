@@ -1,4 +1,5 @@
 import { apiRequest, getToken } from "@/lib/auth";
+import type { ClickMetrics } from "@/lib/clicks";
 
 export type CreativeMetrics = {
   impressions: number;
@@ -21,7 +22,7 @@ export type AdvertiserCreative = {
   updated_at: string;
 };
 export type CreativeDetail = AdvertiserCreative & {
-  metrics: CreativeMetrics;
+  metrics: CreativeMetrics & ClickMetrics;
   spend_chart: (CreativeMetrics & { date: string; label: string })[];
   period: { from: string; to: string };
   countries: {
@@ -36,7 +37,7 @@ export type CreativeDetail = AdvertiserCreative & {
   }[];
 };
 export type CreativeList = {
-  creatives: (AdvertiserCreative &
+  creatives: (AdvertiserCreative & ClickMetrics &
     Pick<CreativeMetrics, "impressions" | "spend_micros">)[];
   counts: Record<string, number>;
   pagination: { page: number; last_page: number; total: number };

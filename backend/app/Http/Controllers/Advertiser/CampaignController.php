@@ -8,6 +8,7 @@ use App\Models\AdvertiserAccount;
 use App\Models\AdvertiserLedgerEntry;
 use App\Models\Campaign;
 use App\Models\ValidatedImpression;
+use App\Services\ClickMetricsService;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -24,7 +25,6 @@ class CampaignController extends Controller
 
         return response()->json(['data' => [
             'countries' => config('campaigns.countries'),
-            'languages' => config('campaigns.languages'),
             'server_categories' => config('campaigns.server_categories'),
             'available_balance_micros' => $this->balance($account),
         ]]);
@@ -63,13 +63,18 @@ class CampaignController extends Controller
                 ->whereIn('campaign_id', $ids)->selectRaw('campaign_id, COUNT(*) as amount')->groupBy('campaign_id')->pluck('amount', 'campaign_id');
             $counts = Campaign::query()->where('advertiser_account_id', $account->id)
                 ->selectRaw('status, COUNT(*) as amount')->groupBy('status')->pluck('amount', 'status')->map(fn ($count) => (int) $count);
+            $clickService = app(ClickMetricsService::class);
+            $clicks = $clickService->grouped($clickService->query($account->id)->whereIn('delivery.campaign_id', $ids), 'delivery.campaign_id');
 
             return [
-                'campaigns' => $page->getCollection()->map(function (Campaign $campaign) use ($spend, $impressions): array {
+                'campaigns' => $page->getCollection()->map(function (Campaign $campaign) use ($spend, $impressions, $clicks): array {
                     $amount = abs((int) ($spend[$campaign->id] ?? 0));
                     $count = (int) ($impressions[$campaign->id] ?? 0);
+                    $uniqueClicks = (int) ($clicks[$campaign->id]->unique_clicks ?? 0);
 
                     return [...$this->basic($campaign), 'spend_micros' => $amount, 'impressions' => $count,
+                        'clicks' => $uniqueClicks, 'raw_clicks' => (int) ($clicks[$campaign->id]->raw_clicks ?? 0),
+                        'ctr' => $count > 0 ? round($uniqueClicks * 100 / $count, 2) : null,
                         'effective_cpm_micros' => $count ? (int) round($amount * 1000 / $count) : 0,
                         'active_creatives_count' => $campaign->status === 'active' ? $campaign->active_creatives_count : 0];
                 })->all(),
@@ -154,8 +159,8 @@ class CampaignController extends Controller
         $campaign->starts_at = CarbonImmutable::parse($data['starts_at'])->utc();
         $campaign->ends_at = CarbonImmutable::parse($data['ends_at'])->utc();
         $campaign->save();
-        $existing = $campaign->targets()->get(['country_code', 'language', 'server_category']);
-        $dimensions = ['countries' => 'country_code', 'languages' => 'language', 'server_categories' => 'server_category'];
+        $existing = $campaign->targets()->get(['country_code', 'server_category']);
+        $dimensions = ['countries' => 'country_code', 'server_categories' => 'server_category'];
         $unchanged = $existing->isNotEmpty();
         foreach ($dimensions as $field => $column) {
             $unchanged = $unchanged && $existing->pluck($column)->filter()->unique()->sort()->values()->all() === collect($data[$field])->sort()->values()->all();
@@ -164,14 +169,11 @@ class CampaignController extends Controller
             return;
         }
         $campaign->targets()->delete();
-        // Each row must match all three dimensions in the serving query.
         $targets = [];
         foreach ($data['countries'] as $country) {
-            foreach ($data['languages'] as $language) {
-                foreach ($data['server_categories'] as $category) {
-                    $targets[] = ['campaign_id' => $campaign->id, 'country_code' => $country, 'language' => $language,
-                        'server_category' => $category, 'created_at' => now(), 'updated_at' => now()];
-                }
+            foreach ($data['server_categories'] as $category) {
+                $targets[] = ['campaign_id' => $campaign->id, 'country_code' => $country,
+                    'server_category' => $category, 'created_at' => now(), 'updated_at' => now()];
             }
         }
         foreach (array_chunk($targets, 500) as $chunk) {
@@ -191,6 +193,10 @@ class CampaignController extends Controller
         $dailyImpressions = (clone $impressions)->whereBetween('validated_at', [$start, $end])
             ->selectRaw('DATE(validated_at) as day, COUNT(*) as amount')->groupByRaw('DATE(validated_at)')->pluck('amount', 'day');
         $count = (int) $dailyImpressions->sum();
+        $clickService = app(ClickMetricsService::class);
+        $clickQuery = $clickService->query($account->id)->where('delivery.campaign_id', $campaign->id);
+        $clickMetrics = $clickService->metrics((clone $clickQuery)->whereBetween('clicks.received_at', [$start, $end]), $count);
+        $creativeClicks = $clickService->grouped(clone $clickQuery, 'delivery.creative_id');
         $periodSpend = abs((int) $daily->sum());
         $creativeTotals = (clone $impressions)->selectRaw('creative_id, COUNT(*) as impressions, SUM(billable_micros) as spend_micros')->groupBy('creative_id')->get()->keyBy('creative_id');
         $campaign->load(['targets', 'creatives']);
@@ -213,8 +219,6 @@ class CampaignController extends Controller
         }
         if ($campaign->targets->isEmpty()) {
             $issues[] = 'No audience targeting configured';
-        } elseif ($campaign->creatives->contains('status', 'approved') && ! $campaign->creatives->contains(fn ($creative) => $creative->status === 'approved' && ! $creative->is_paused && ($creative->language === null || $campaign->targets->contains(fn ($target) => $target->language === null || $target->language === $creative->language)))) {
-            $issues[] = 'Approved creative languages do not match targeting';
         }
         if ($balance <= 0) {
             $issues[] = 'Insufficient account balance';
@@ -236,10 +240,9 @@ class CampaignController extends Controller
 
         return [...$this->basic($campaign),
             'countries' => $campaign->targets->pluck('country_code')->filter()->unique()->values()->all(),
-            'languages' => $campaign->targets->pluck('language')->filter()->unique()->values()->all(),
             'server_categories' => $campaign->targets->pluck('server_category')->filter()->unique()->values()->all(),
             'delivery_eligible' => $issues === [], 'delivery_issues' => $issues,
-            'metrics' => ['spend_micros' => $periodSpend, 'impressions' => $count, 'effective_cpm_micros' => $count ? (int) round($periodSpend * 1000 / $count) : 0,
+            'metrics' => [...$clickMetrics, 'spend_micros' => $periodSpend, 'impressions' => $count, 'effective_cpm_micros' => $count ? (int) round($periodSpend * 1000 / $count) : 0,
                 'spend_today_micros' => $today, 'spend_total_micros' => $spend, 'spend_month_micros' => $month],
             'spend_chart' => $chart,
             'creatives' => $campaign->creatives->map(fn ($creative) => [
@@ -247,6 +250,7 @@ class CampaignController extends Controller
                 'language' => $creative->language, 'message_text' => $creative->message_text, 'click_url' => $creative->click_url,
                 'is_paused' => $creative->is_paused,
                 'impressions' => (int) ($creativeTotals[$creative->id]->impressions ?? 0),
+                'clicks' => (int) ($creativeClicks[$creative->id]->unique_clicks ?? 0),
                 'spend_micros' => (int) ($creativeTotals[$creative->id]->spend_micros ?? 0),
             ])->all(),
             'period' => ['from' => $start->toDateString(), 'to' => $end->toDateString()],

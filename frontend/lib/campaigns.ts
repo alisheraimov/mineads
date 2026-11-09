@@ -1,4 +1,5 @@
 import { apiRequest, getToken } from "@/lib/auth";
+import type { ClickMetrics } from "@/lib/clicks";
 
 export type Campaign = {
   id: number;
@@ -9,7 +10,7 @@ export type Campaign = {
   starts_at: string | null;
   ends_at: string | null;
 };
-export type CampaignRow = Campaign & {
+export type CampaignRow = Campaign & ClickMetrics & {
   spend_micros: number;
   impressions: number;
   effective_cpm_micros: number;
@@ -32,15 +33,15 @@ export type Creative = {
   click_url: string | null;
   impressions: number;
   spend_micros: number;
+  clicks: number;
 };
 export type CampaignDetail = Campaign & {
   account_name: string;
   countries: string[];
-  languages: string[];
   server_categories: string[];
   delivery_eligible: boolean;
   delivery_issues: string[];
-  metrics: {
+  metrics: ClickMetrics & {
     spend_micros: number;
     impressions: number;
     effective_cpm_micros: number;
@@ -61,7 +62,6 @@ export type CampaignDetail = Campaign & {
 };
 export type CampaignOptions = {
   countries: string[];
-  languages: string[];
   server_categories: string[];
   available_balance_micros: number;
 };
@@ -72,7 +72,6 @@ export type CampaignPayload = {
   daily_budget_micros: number;
   total_budget_micros: number;
   countries: string[];
-  languages: string[];
   server_categories: string[];
 };
 

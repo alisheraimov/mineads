@@ -201,16 +201,21 @@ function DashboardContent({ dashboard }: { dashboard: DashboardData }) {
         />
       </section>
 
-      <section className="grid gap-4 lg:grid-cols-3">
+      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <MetricCard
-          label="Spend today"
-          value={formatMicros(dashboard.metrics.spend_today_micros)}
-          caption={`This month: ${formatMicros(dashboard.metrics.spend_month_micros)}`}
+          label="Spend this month"
+          value={formatMicros(dashboard.metrics.spend_month_micros)}
+          caption="This month · USD"
         />
         <MetricCard
-          label="Impressions today"
-          value={formatNumber(dashboard.metrics.impressions_today)}
-          caption={`This month: ${formatNumber(dashboard.metrics.impressions_month)}`}
+          label="Impressions this month"
+          value={formatNumber(dashboard.metrics.impressions_month)}
+          caption="Validated impressions"
+        />
+        <MetricCard
+          label="Unique clicks this month"
+          value={formatNumber(dashboard.metrics.clicks_month)}
+          caption={`CTR: ${dashboard.metrics.ctr_month == null ? "—" : `${dashboard.metrics.ctr_month.toFixed(2)}%`}`}
         />
         <MetricCard
           label="Effective CPM"

@@ -1,5 +1,7 @@
 "use client";
 
+import { ClickMetricsSummary } from "@/components/advertiser/click-metrics";
+
 import Link from "next/link";
 import { useRouter } from "@/lib/navigation";
 import { useEffect, useState } from "react";
@@ -347,6 +349,9 @@ export function CreativeDetailsPage({ id }: { id: string }) {
                 variant={variant}
               />
             </div>
+          </section>
+          <section className="overflow-hidden rounded-lg border bg-card" aria-label="Click performance">
+            <ClickMetricsSummary metrics={data.metrics} />
           </section>
           {!data.metrics.impressions ? (
             <p className="text-sm text-muted-foreground">

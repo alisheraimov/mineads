@@ -85,9 +85,9 @@ class AdminCampaignService
         }
         $counts = $campaign->creatives()->withTrashed()->get(['status', 'deleted_at']);
         $issues = $this->deliveryIssues($campaign, $balance, $spent, $todaySpent);
-        $rules = $campaign->targets->groupBy(fn ($target) => json_encode([$target->language, $target->server_category]))->map(fn ($group): array => [
+        $rules = $campaign->targets->groupBy(fn ($target) => json_encode($target->server_category))->map(fn ($group): array => [
             'countries' => $group->contains('country_code', null) ? [] : $group->pluck('country_code')->unique()->values()->all(),
-            'language' => $group->first()->language, 'server_category' => $group->first()->server_category,
+            'server_category' => $group->first()->server_category,
         ])->values()->all();
         $data = [...$this->basic($campaign, $money), 'metrics' => $metrics, 'targeting_rules' => $rules, 'delivery_eligible' => $issues === [], 'delivery_issues' => $issues,
             'creative_counts' => ['total' => $counts->count(), 'approved' => $counts->whereNull('deleted_at')->where('status', 'approved')->count(),
@@ -129,11 +129,8 @@ class AdminCampaignService
         if ($campaign->targets->isEmpty()) {
             $issues[] = 'No audience targeting configured';
         }
-        $approved = $campaign->creatives()->where('status', 'approved')->where('is_paused', false)->get(['language']);
-        if ($approved->isEmpty()) {
+        if (! $campaign->creatives()->where('status', 'approved')->where('is_paused', false)->exists()) {
             $issues[] = 'No approved, unpaused creative';
-        } elseif (! $approved->contains(fn ($creative) => $creative->language === null || $campaign->targets->contains(fn ($target) => $target->language === null || $target->language === $creative->language))) {
-            $issues[] = 'Approved creative languages do not match targeting';
         }
         if ($balance <= 0) {
             $issues[] = 'Insufficient advertiser funds';

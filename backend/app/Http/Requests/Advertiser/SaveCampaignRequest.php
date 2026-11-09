@@ -31,8 +31,6 @@ class SaveCampaignRequest extends FormRequest
             'total_budget_micros' => ['required', 'integer', 'gte:daily_budget_micros', 'max:1000000000000'],
             'countries' => ['required', 'array', 'min:1', 'max:249'],
             'countries.*' => ['required', 'string', 'distinct', Rule::in(config('campaigns.countries'))],
-            'languages' => ['required', 'array', 'min:1', 'max:20'],
-            'languages.*' => ['required', 'string', 'distinct', Rule::in(config('campaigns.languages'))],
             'server_categories' => ['required', 'array', 'min:1', 'max:5'],
             'server_categories.*' => ['required', 'string', 'distinct', Rule::in(config('campaigns.server_categories'))],
         ];

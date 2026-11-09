@@ -141,6 +141,7 @@ export function CampaignListPage() {
                       "Status",
                       "Budget / spent",
                       "Impressions",
+                      "Clicks / CTR",
                       "eCPM",
                       "Schedule · UTC",
                       "Active ads",
@@ -156,7 +157,7 @@ export function CampaignListPage() {
                   {data.campaigns.length === 0 ? (
                     <TableRow>
                       <TableCell
-                        colSpan={8}
+                        colSpan={9}
                         className="h-40 text-center text-muted-foreground"
                       >
                         {search || status !== "all"
@@ -194,6 +195,12 @@ export function CampaignListPage() {
                         </TableCell>
                         <TableCell>
                           {formatNumber(campaign.impressions)}
+                        </TableCell>
+                        <TableCell>
+                          <p>{formatNumber(campaign.clicks)}</p>
+                          <p className="text-muted-foreground">
+                            {campaign.ctr == null ? "—" : `${campaign.ctr.toFixed(2)}%`}
+                          </p>
                         </TableCell>
                         <TableCell>
                           {campaign.impressions

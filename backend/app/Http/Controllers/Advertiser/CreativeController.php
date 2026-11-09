@@ -9,6 +9,7 @@ use App\Models\AdvertiserAccount;
 use App\Models\Campaign;
 use App\Models\ValidatedImpression;
 use App\Services\AdminCreativeService;
+use App\Services\ClickMetricsService;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -54,8 +55,13 @@ class CreativeController extends Controller
             $page = $base->with('campaign:id,name,status')->orderByDesc('id')->paginate(20);
             $totals = ValidatedImpression::query()->where('advertiser_account_id', $account->id)->whereIn('creative_id', $page->getCollection()->pluck('id'))
                 ->selectRaw('creative_id, COUNT(*) as impressions, SUM(billable_micros) as spend_micros')->groupBy('creative_id')->get()->keyBy('creative_id');
+            $clickService = app(ClickMetricsService::class);
+            $clicks = $clickService->grouped($clickService->query($account->id)->whereIn('delivery.creative_id', $page->getCollection()->pluck('id')), 'delivery.creative_id');
 
             return ['creatives' => $page->getCollection()->map(fn ($creative) => [...$this->basic($creative),
+                'clicks' => (int) ($clicks[$creative->id]->unique_clicks ?? 0),
+                'raw_clicks' => (int) ($clicks[$creative->id]->raw_clicks ?? 0),
+                'ctr' => ($totals[$creative->id]->impressions ?? 0) > 0 ? round((int) ($clicks[$creative->id]->unique_clicks ?? 0) * 100 / $totals[$creative->id]->impressions, 2) : null,
                 'impressions' => (int) ($totals[$creative->id]->impressions ?? 0), 'spend_micros' => (int) ($totals[$creative->id]->spend_micros ?? 0)])->all(),
                 'counts' => $counts, 'pagination' => ['page' => $page->currentPage(), 'last_page' => $page->lastPage(), 'total' => $page->total()]];
         })]);
@@ -75,6 +81,8 @@ class CreativeController extends Controller
             $daily = (clone $query)->selectRaw('DATE(validated_at) as day, COUNT(*) as impressions, SUM(billable_micros) as spend_micros')->groupByRaw('DATE(validated_at)')->get()->keyBy('day');
             $count = (int) $daily->sum('impressions');
             $spend = (int) $daily->sum('spend_micros');
+            $clickService = app(ClickMetricsService::class);
+            $clickMetrics = $clickService->metrics($clickService->query($account->id)->where('delivery.creative_id', $model->id)->whereBetween('clicks.received_at', [$start, $end]), $count);
             $chart = [];
             for ($day = $start; $day->lessThanOrEqualTo($end); $day = $day->addDay()) {
                 $row = $daily[$day->toDateString()] ?? null;
@@ -86,7 +94,7 @@ class CreativeController extends Controller
             $categories = (clone $query)->join('servers', 'servers.id', '=', 'validated_impressions.server_id')
                 ->selectRaw('servers.category as label, COUNT(*) as impressions, SUM(billable_micros) as spend_micros')->groupBy('servers.category')->orderByDesc('impressions')->get();
 
-            return [...$this->basic($model), 'metrics' => $this->metrics($count, $spend), 'spend_chart' => $chart,
+            return [...$this->basic($model), 'metrics' => [...$this->metrics($count, $spend), ...$clickMetrics], 'spend_chart' => $chart,
                 'countries' => $countries->map(fn ($row) => ['label' => $row->label, 'impressions' => (int) $row->impressions, 'spend_micros' => (int) $row->spend_micros])->all(),
                 'server_categories' => $categories->map(fn ($row) => ['label' => $row->label, 'impressions' => (int) $row->impressions, 'spend_micros' => (int) $row->spend_micros])->all(),
                 'period' => ['from' => $start->toDateString(), 'to' => $end->toDateString()]];

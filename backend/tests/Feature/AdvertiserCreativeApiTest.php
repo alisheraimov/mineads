@@ -183,7 +183,7 @@ class AdvertiserCreativeApiTest extends TestCase
         $campaign = $this->campaign();
         $campaign->update(['starts_at' => now()->subDay(), 'ends_at' => now()->addDay()]);
         AdvertiserLedgerEntry::factory()->create(['advertiser_account_id' => $campaign->advertiser_account_id, 'campaign_id' => null, 'type' => 'deposit', 'amount_micros' => 100000000]);
-        CampaignTarget::factory()->create(['campaign_id' => $campaign->id, 'country_code' => 'US', 'language' => 'en', 'server_category' => 'survival']);
+        CampaignTarget::factory()->create(['campaign_id' => $campaign->id, 'country_code' => 'US', 'server_category' => 'survival']);
         RateTier::factory()->create(['is_default' => true]);
         $server = Server::factory()->create(['category' => 'survival', 'status' => 'active']);
         ServerApiToken::factory()->create(['server_id' => $server->id, 'token_hash' => hash('sha256', 'creative-serving-test')]);

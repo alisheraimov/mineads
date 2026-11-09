@@ -130,7 +130,7 @@ class AdminCampaignsApiTest extends TestCase
         }
         RawImpressionEvent::factory()->create(['ad_delivery_id' => $delivery->id, 'validation_status' => 'invalid', 'validated_at' => now()->subMinute()]);
         RawImpressionEvent::factory()->create(['ad_delivery_id' => $delivery->id, 'validation_status' => 'pending']);
-        CampaignTarget::factory()->create(['campaign_id' => $campaign->id, 'country_code' => 'CA', 'language' => 'de', 'server_category' => 'skyblock']);
+        CampaignTarget::factory()->create(['campaign_id' => $campaign->id, 'country_code' => 'CA', 'server_category' => 'skyblock']);
 
         $response = $this->actingAs($owner, 'sanctum')->getJson('/api/admin/campaigns/'.$campaign->id)->assertOk()
             ->assertJsonPath('data.metrics.reported_impressions', 4)->assertJsonPath('data.metrics.validated_impressions', 2)->assertJsonPath('data.metrics.invalid_impressions', 1)
@@ -138,9 +138,9 @@ class AdminCampaignsApiTest extends TestCase
             ->assertJsonPath('data.metrics.invalid_rate', 33.33)->assertJsonPath('data.metrics.served_deliveries', 1)
             ->assertJsonPath('data.budget.spent_today_micros', 5000)->assertJsonPath('data.budget.lifetime_spend_micros', 8000)
             ->assertJsonCount(2, 'data.targeting_rules');
-        $rules = collect($response->json('data.targeting_rules'))->keyBy('language');
-        $this->assertSame(['US'], $rules['en']['countries']);
-        $this->assertSame(['CA'], $rules['de']['countries']);
+        $rules = collect($response->json('data.targeting_rules'))->keyBy('server_category');
+        $this->assertSame(['US'], $rules['survival']['countries']);
+        $this->assertSame(['CA'], $rules['skyblock']['countries']);
         $points = collect($response->json('data.performance.points'))->keyBy('date');
         $this->assertSame(0, $points['2026-10-24']['impressions']);
         $this->assertSame(1, $points['2026-10-25']['impressions']);
@@ -262,7 +262,7 @@ class AdminCampaignsApiTest extends TestCase
             'starts_at' => '2026-10-20 00:00:00', 'ends_at' => '2026-11-30 00:00:00', 'created_at' => '2026-10-20 00:00:00',
         ], ...$overrides]);
         AdCreative::factory()->create(['campaign_id' => $campaign->id, 'status' => 'approved', 'is_paused' => false, 'language' => 'en']);
-        CampaignTarget::factory()->create(['campaign_id' => $campaign->id, 'country_code' => 'US', 'language' => 'en', 'server_category' => 'survival']);
+        CampaignTarget::factory()->create(['campaign_id' => $campaign->id, 'country_code' => 'US', 'server_category' => 'survival']);
         AdvertiserLedgerEntry::factory()->create(['advertiser_account_id' => $account->id, 'campaign_id' => null, 'type' => 'deposit', 'amount_micros' => 100000000]);
 
         return $campaign;

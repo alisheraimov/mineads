@@ -12,7 +12,6 @@ class CampaignTargetFactory extends Factory
         return [
             'campaign_id' => Campaign::factory(),
             'country_code' => fake()->randomElement(['US', 'BR', 'DE', 'GB', null]),
-            'language' => fake()->randomElement(['en', 'pt', 'de', null]),
             'server_category' => fake()->randomElement(['survival', 'skyblock', 'minigames', null]),
         ];
     }

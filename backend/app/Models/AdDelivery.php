@@ -18,6 +18,7 @@ class AdDelivery extends Model
     {
         return [
             'expires_at' => 'datetime',
+            'click_expires_at' => 'datetime',
             'requested_at' => 'datetime',
         ];
     }

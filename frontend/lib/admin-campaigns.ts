@@ -17,7 +17,7 @@ export type CampaignPoint = { date: string; impressions: number; spend_micros?: 
 export type AdminCampaignDetail = Omit<AdminCampaign, "spend_micros" | "impressions" | "creatives_count" | "pending_creatives_count" | "last_delivery_at"> & {
   can_view_money: boolean; can_delete: boolean; can_view_advertiser: boolean;
   delivery_eligible: boolean; delivery_issues: string[];
-  targeting_rules: { countries: string[]; language: string | null; server_category: string | null }[];
+  targeting_rules: { countries: string[]; server_category: string | null }[];
   metrics: { reported_impressions: number; validated_impressions: number; invalid_impressions: number; pending_impressions: number;
     invalid_rate: number; served_deliveries: number; last_delivery_at: string | null; spend_micros?: number; effective_cpm_micros?: number | null };
   budget?: { spent_today_micros: number; lifetime_spend_micros: number; available_balance_micros: number; daily_remaining_micros: number | null; total_remaining_micros: number | null };

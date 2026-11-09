@@ -20,6 +20,9 @@ export type AdvertiserDashboard = {
     spend_month_micros: number;
     impressions_today: number;
     impressions_month: number;
+    clicks_month: number;
+    raw_clicks_month: number;
+    ctr_month: number | null;
     effective_cpm_micros: number;
   };
   spend_chart: Array<{

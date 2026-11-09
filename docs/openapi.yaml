@@ -14,6 +14,40 @@ tags:
   - name: Advertiser Portal
   - name: Plugin API
 paths:
+  /c/{token}:
+    servers:
+      - url: http://localhost:8000
+    get:
+      tags: [Plugin API]
+      summary: Record a delivery-level link open and redirect
+      description: >
+        Public URL supplied as message.click_url. Valid for 30 days after serving,
+        independently of the impression token. Redirects to the destination saved
+        when the ad was served. GET records raw opens; recognized automation and
+        repeat delivery/hashed IP-and-browser combinations are excluded from unique
+        clicks. No billing changes occur. HEAD redirects without recording an open.
+        Rate limited to 120 requests per minute per visitor IP.
+      operationId: followAdClick
+      parameters:
+        - name: token
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "302":
+          description: Redirect to the saved advertiser destination, with no-store caching and no-referrer policy.
+          headers:
+            Location:
+              schema:
+                type: string
+                format: uri
+        "404":
+          description: Unknown or invalid tracking link.
+        "410":
+          description: Tracking link has expired.
+        "429":
+          description: Rate limit exceeded.
   /health:
     get:
       tags: [Health]
@@ -254,6 +288,9 @@ components:
                 - spend_month_micros
                 - impressions_today
                 - impressions_month
+                - clicks_month
+                - raw_clicks_month
+                - ctr_month
                 - effective_cpm_micros
               properties:
                 available_balance_micros:
@@ -275,6 +312,16 @@ components:
                   type: integer
                 impressions_month:
                   type: integer
+                clicks_month:
+                  type: integer
+                  description: Unique delivery/visitor link opens received this month in UTC; approximate visitors, not verified players.
+                raw_clicks_month:
+                  type: integer
+                  description: All accepted GET link opens this month, including duplicates and recognized automation.
+                ctr_month:
+                  type: number
+                  nullable: true
+                  description: Unique clicks divided by validated impressions this month, multiplied by 100, rounded to two decimal places. Null without validated impressions.
                 effective_cpm_micros:
                   type: integer
                   format: int64
@@ -594,7 +641,7 @@ components:
           example: "[Sponsored] Join ExampleMC for weekly events."
         click_url:
           type: string
-          description: Optional advertiser URL associated with the chat ad.
+          description: Optional MineAds tracking redirect URL. Use this exact URL as the chat click action; it records a link open and redirects to the saved advertiser destination.
           nullable: true
           format: uri
     AdTracking:
@@ -605,6 +652,11 @@ components:
           type: string
           description: Short-lived token proving the impression report belongs to this ad delivery.
           example: imp_example
+        click_expires_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: Expiry of the optional click URL, 30 days after serving. Independent of impression token expiry.
         expires_at:
           type: string
           description: Timestamp after which the impression token should no longer be accepted.
