@@ -31,7 +31,7 @@ class GoogleAuthController extends Controller
 
         if (! $user) {
             $user = User::query()->create([
-                'name' => $googleUser->getName() ?: $googleUser->getNickname() ?: 'MineAds User',
+                'name' => $googleUser->getName() ?: $googleUser->getNickname() ?: 'VoxelAds User',
                 'email' => $googleUser->getEmail(),
                 'email_verified_at' => now(),
                 'password' => Str::password(32),

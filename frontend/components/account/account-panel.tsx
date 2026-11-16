@@ -266,7 +266,7 @@ export function AccountPanel() {
               <FeedbackMessage feedback={emailFeedback} />
             </div>
             <FeedbackMessage feedback={profileFeedback} />
-            <SaveRow description="Your name appears throughout MineAds.">
+            <SaveRow description="Your name appears throughout VoxelAds.">
               <Button
                 type="submit"
                 className="h-9 w-full px-4 sm:w-auto"
@@ -292,7 +292,7 @@ export function AccountPanel() {
               <div className="space-y-2">
                 <p className="text-sm font-medium">Google sign-in connected</p>
                 <p className="text-sm leading-5 text-muted-foreground">
-                  To set or reset your MineAds password, request a secure link
+                  To set or reset your VoxelAds password, request a secure link
                   at {user.email}. You can continue signing in with Google.
                 </p>
               </div>

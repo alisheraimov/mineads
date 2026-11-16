@@ -1,6 +1,6 @@
-Project MineAds {
+Project VoxelAds {
   database_type: "PostgreSQL"
-  Note: "All monetary values are integer USD micros (1 USD = 1,000,000 micros). Visual reference for the MineAds database. Keep this file in sync with Laravel migrations in backend/database/migrations."
+  Note: "All monetary values are integer USD micros (1 USD = 1,000,000 micros). Visual reference for the VoxelAds database. Keep this file in sync with Laravel migrations in backend/database/migrations."
 }
 
 Table users {

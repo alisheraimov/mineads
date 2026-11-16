@@ -15,7 +15,7 @@ export default function Home() {
         <div className="max-w-2xl">
           <Badge>Ads for Minecraft servers</Badge>
           <h1 className="mt-6 max-w-2xl text-5xl font-semibold leading-[1.02] tracking-tight text-foreground sm:text-6xl lg:text-7xl">
-            MineAds
+            VoxelAds
           </h1>
           <p className="mt-6 max-w-xl text-lg leading-8 text-muted-foreground">
             A clean marketplace for advertisers to reach players and for server

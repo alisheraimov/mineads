@@ -23,11 +23,11 @@ RUN composer install --no-interaction --prefer-dist --optimize-autoloader --no-s
 
 COPY . .
 
-COPY docker/entrypoint.sh /usr/local/bin/mineads-entrypoint
+COPY docker/entrypoint.sh /usr/local/bin/voxelads-entrypoint
 
 RUN composer dump-autoload --optimize
 
 EXPOSE 8000
 
-ENTRYPOINT ["sh", "/usr/local/bin/mineads-entrypoint"]
+ENTRYPOINT ["sh", "/usr/local/bin/voxelads-entrypoint"]
 CMD ["php", "artisan", "serve", "--host=0.0.0.0", "--port=8000"]

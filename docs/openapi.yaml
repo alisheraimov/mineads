@@ -1,9 +1,9 @@
 openapi: 3.1.0
 info:
-  title: MineAds API
+  title: VoxelAds API
   version: 0.1.0
   description: >
-    API contract for the MineAds backend. This initial specification documents
+    API contract for the VoxelAds backend. This initial specification documents
     the Plugin API used by Minecraft servers plus a basic health endpoint.
     All monetary amounts use integer USD micros (1 USD = 1,000,000 micros).
 servers:
@@ -97,7 +97,7 @@ paths:
       tags: [Plugin API]
       summary: Activate a Minecraft server plugin
       description: >
-        Request sent once when a publisher connects a Minecraft server to MineAds.
+        Request sent once when a publisher connects a Minecraft server to VoxelAds.
         Exchanges a dashboard setup token for a long-lived server API token.
       operationId: activatePluginServer
       requestBody:
@@ -148,8 +148,8 @@ paths:
       summary: Request ads for audience buckets
       description: >
         Request sent before the plugin displays a chat ad. The plugin groups
-        eligible online players by country/language and asks MineAds for one ad
-        decision per audience bucket. MineAds only serves campaigns that match
+        eligible online players by country/language and asks VoxelAds for one ad
+        decision per audience bucket. VoxelAds only serves campaigns that match
         targeting and have enough advertiser balance plus remaining campaign
         budget for the requested audience.
       operationId: requestPluginAds
@@ -178,7 +178,7 @@ paths:
       summary: Report displayed ad impressions
       description: >
         Request sent after the plugin displays a served ad to one or more
-        players. MineAds validates the delivery token, records raw impressions,
+        players. VoxelAds validates the delivery token, records raw impressions,
         and queues each new raw impression for validation. Only valid impressions
         become billable and create advertiser spend / publisher earning ledger
         entries.
@@ -388,7 +388,7 @@ components:
         server_id:
           type: integer
           format: int64
-          description: MineAds server identifier assigned to this Minecraft server.
+          description: VoxelAds server identifier assigned to this Minecraft server.
           example: 1
         api_token:
           type: string
@@ -403,7 +403,7 @@ components:
       properties:
         plugin_version:
           type: string
-          description: Version of the installed MineAds Minecraft plugin.
+          description: Version of the installed VoxelAds Minecraft plugin.
           nullable: true
           example: 0.1.0
         minecraft_version:
@@ -444,7 +444,7 @@ components:
           example: true
         server_status:
           type: string
-          description: Current MineAds status for the server.
+          description: Current VoxelAds status for the server.
           example: active
         config:
           description: Remote plugin configuration that should be applied by the server.
@@ -497,7 +497,7 @@ components:
               example: 30
     AdRequest:
       type: object
-      description: Request payload asking MineAds for ad decisions for one or more audience buckets.
+      description: Request payload asking VoxelAds for ad decisions for one or more audience buckets.
       required: [placement, audiences]
       properties:
         placement:
@@ -600,11 +600,11 @@ components:
         campaign_id:
           type: integer
           format: int64
-          description: Campaign selected by MineAds.
+          description: Campaign selected by VoxelAds.
         creative_id:
           type: integer
           format: int64
-          description: Creative selected by MineAds.
+          description: Creative selected by VoxelAds.
         placement:
           type: string
           description: Placement this ad is intended for.
@@ -641,7 +641,7 @@ components:
           example: "[Sponsored] Join ExampleMC for weekly events."
         click_url:
           type: string
-          description: Optional MineAds tracking redirect URL. Use this exact URL as the chat click action; it records a link open and redirects to the saved advertiser destination.
+          description: Optional VoxelAds tracking redirect URL. Use this exact URL as the chat click action; it records a link open and redirects to the saved advertiser destination.
           nullable: true
           format: uri
     AdTracking:

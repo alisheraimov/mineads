@@ -66,7 +66,7 @@ export function ChoosePathPanel() {
 
   return (
     <div className="flex w-full max-w-[400px] flex-col gap-6">
-      <AuthIntro title="Choose your path" description="How would you like to use MineAds?" />
+      <AuthIntro title="Choose your path" description="How would you like to use VoxelAds?" />
       <div className="flex flex-col gap-3">
         {(Object.keys(paths) as Path[]).map((path) => {
           const active = selectedPath === path;

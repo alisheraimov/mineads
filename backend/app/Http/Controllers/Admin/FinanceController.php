@@ -203,7 +203,7 @@ class FinanceController extends Controller
             fwrite($out, "\xEF\xBB\xBF");
             $write($out);
             fclose($out);
-        }, 'mineads-'.$name.'-'.now('UTC')->format('Ymd-His').'.csv', ['Content-Type' => 'text/csv; charset=UTF-8', 'Cache-Control' => 'no-store', 'X-Content-Type-Options' => 'nosniff']);
+        }, 'voxelads-'.$name.'-'.now('UTC')->format('Ymd-His').'.csv', ['Content-Type' => 'text/csv; charset=UTF-8', 'Cache-Control' => 'no-store', 'X-Content-Type-Options' => 'nosniff']);
     }
 
     private function writeCsv($out, array $cells, array $numericColumns): void

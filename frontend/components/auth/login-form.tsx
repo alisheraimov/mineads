@@ -51,7 +51,7 @@ export function LoginForm() {
 
   return (
     <div className="flex w-full max-w-[360px] flex-col gap-6">
-      <AuthIntro title="Welcome back" description="Sign in to your MineAds account." />
+      <AuthIntro title="Welcome back" description="Sign in to your VoxelAds account." />
       <Button asChild variant="outline" className="h-10 w-full">
         <a href={googleRedirectUrl()}>
           <GoogleMark />

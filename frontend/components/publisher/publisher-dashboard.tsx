@@ -85,7 +85,7 @@ function DashboardContent({ dashboard }: { dashboard: DashboardData }) {
           <div className="max-w-[580px]">
             <div className="mb-4 grid size-10 place-items-center rounded-md bg-muted"><Server className="size-5" aria-hidden="true" /></div>
             <h2 className="text-xl font-semibold">Connect your first Minecraft server</h2>
-            <p className="mt-3 text-sm leading-6 text-muted-foreground">Connect a server and activate the MineAds plugin to start earning from ads. Your server performance and earnings will appear here.</p>
+            <p className="mt-3 text-sm leading-6 text-muted-foreground">Connect a server and activate the VoxelAds plugin to start earning from ads. Your server performance and earnings will appear here.</p>
             <div className="mt-4"><AddServerButton /></div>
           </div>
         </section>

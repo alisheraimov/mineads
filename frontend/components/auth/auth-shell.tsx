@@ -8,18 +8,17 @@ export function AuthShell({ children }: { children: React.ReactNode }) {
       <header className="flex h-[88px] items-center justify-between px-6 sm:px-8">
         <Link
           href="/"
-          className="inline-flex items-center gap-3"
-          aria-label="MineAds home"
+          className="inline-flex items-center"
+          aria-label="VoxelAds home"
         >
           <Image
-            src="/mineads_logo.svg"
+            src="/voxelads_logo.svg"
             alt=""
-            width={29}
+            width={30}
             height={30}
             priority
             className="dark:invert"
           />
-          <span className="text-xl font-semibold leading-7 max-[379px]:hidden">MineAds</span>
         </Link>
         <div className="flex items-center gap-2">
           <ThemeSwitch />
@@ -32,7 +31,7 @@ export function AuthShell({ children }: { children: React.ReactNode }) {
         {children}
       </section>
       <footer className="flex h-24 items-center justify-between px-6 text-xs text-muted-foreground sm:px-8">
-        <p>© 2026 MineAds</p>
+        <p>© 2026 VoxelAds</p>
         <div className="flex gap-6">
           <Link href="/terms">Terms of service</Link>
           <Link href="/privacy">Privacy policy</Link>

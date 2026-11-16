@@ -25,7 +25,7 @@ export function ServerCreatePage() {
   }
   return <>
     <ServerBreadcrumb current={setup ? `${setup.server.name} / Setup` : "Add server"} />
-    <div><h1 className="text-2xl font-semibold">{setup ? `Connect ${setup.server.name}` : "Add server"}</h1><p className="mt-2 text-sm text-muted-foreground">{setup ? "Server created. Complete the plugin setup to activate the connection." : "Create a server record, then activate the MineAds plugin."}</p></div>
+    <div><h1 className="text-2xl font-semibold">{setup ? `Connect ${setup.server.name}` : "Add server"}</h1><p className="mt-2 text-sm text-muted-foreground">{setup ? "Server created. Complete the plugin setup to activate the connection." : "Create a server record, then activate the VoxelAds plugin."}</p></div>
     <ol aria-label="Setup progress" className="flex flex-wrap gap-5 text-xs text-muted-foreground"><li className={!setup ? "font-semibold text-foreground" : ""}>1. Server details</li><li className={setup ? "font-semibold text-foreground" : ""}>2. Plugin setup</li><li>3. Activation</li></ol>
     {setup ? <ServerSetup setup={setup} /> : <div className="grid gap-6 lg:grid-cols-[1.6fr_1fr]">
       <form onSubmit={submit} className={`${panelClass} space-y-5`}><h2 className="font-semibold">Server details</h2><p className="text-sm text-muted-foreground">All three fields are required.</p>

@@ -43,7 +43,7 @@ export async function exportFinance(path: string, query: string) {
  if (!result.ok) { const error = await result.json().catch(() => ({})); throw new ApiError(error.message ?? "Unable to export financial records.", result.status); }
  const url = URL.createObjectURL(await result.blob());
  const link = document.createElement("a"); link.href = url;
- link.download = result.headers.get("content-disposition")?.match(/filename="?([^";]+)"?/)?.[1] ?? "mineads-" + path.replaceAll("/", "-") + "-" + new Date().toISOString().slice(0,10) + ".csv";
+ link.download = result.headers.get("content-disposition")?.match(/filename="?([^";]+)"?/)?.[1] ?? "voxelads-" + path.replaceAll("/", "-") + "-" + new Date().toISOString().slice(0,10) + ".csv";
  document.body.appendChild(link); link.click(); link.remove(); setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 export function exactUsd(micros: number, signed = false) {

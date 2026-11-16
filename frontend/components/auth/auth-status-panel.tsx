@@ -46,7 +46,7 @@ export function PasswordResetSuccessPanel() {
       <AuthIntro
         icon={<CircleCheck className="size-6" aria-hidden="true" />}
         title="Password updated"
-        description="Your password has been reset. Sign in with your new password to return to MineAds."
+        description="Your password has been reset. Sign in with your new password to return to VoxelAds."
       />
       <PrimaryButton asChild className="h-10 w-full">
         <Link href="/login">Return to sign in</Link>
@@ -98,7 +98,7 @@ export function AccountSuspendedPanel() {
       <AuthIntro
         icon={<LockKeyhole className="size-6" aria-hidden="true" />}
         title="Account suspended"
-        description="You can't access MineAds while your account is suspended."
+        description="You can't access VoxelAds while your account is suspended."
       />
       <div className="rounded-md border border-border px-2.5 py-2">
         <p className="text-sm font-medium leading-5">Your data is preserved</p>

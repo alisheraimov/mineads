@@ -26,13 +26,13 @@ use Illuminate\Support\Facades\Hash;
 class DemoDataSeeder extends Seeder
 {
     /**
-     * Seed a small but complete MineAds demo dataset.
+     * Seed a small but complete VoxelAds demo dataset.
      */
     public function run(): void
     {
         $admin = User::query()->firstOrCreate(
             ['email' => 'admin@mineads.test'],
-            ['name' => 'MineAds Admin', 'password' => 'password', 'role' => 'admin'],
+            ['name' => 'VoxelAds Admin', 'password' => 'password', 'role' => 'admin'],
         );
 
         $admin->assignRole('admin-owner');
@@ -265,7 +265,7 @@ class DemoDataSeeder extends Seeder
             ]);
         }
 
-        $this->command?->info('Seeded MineAds demo data. Login emails use password: password');
+        $this->command?->info('Seeded VoxelAds demo data. Login emails use password: password');
         $this->command?->line('Admin: '.$admin->email);
     }
 }

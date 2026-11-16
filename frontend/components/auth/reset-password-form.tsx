@@ -45,7 +45,7 @@ export function ResetPasswordForm() {
       <AuthIntro
         icon={<LockKeyhole className="size-6" aria-hidden="true" />}
         title="Set a new password"
-        description="Choose a new password for your MineAds account."
+        description="Choose a new password for your VoxelAds account."
       />
       <AuthForm onSubmit={handleSubmit}>
         <AuthField>

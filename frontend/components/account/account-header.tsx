@@ -36,20 +36,17 @@ export function AccountHeader({
     <header className="flex h-[72px] items-center justify-between border-b border-border bg-background px-6 lg:px-8">
       <Link
         href="/"
-        aria-label="MineAds home"
-        className="inline-flex items-center gap-3"
+        aria-label="VoxelAds home"
+        className="inline-flex items-center"
       >
         <Image
           src="/account-logo.svg"
           alt=""
-          width={29}
+          width={30}
           height={30}
           priority
           className="dark:invert"
         />
-        <span className="text-xl font-semibold max-[379px]:hidden">
-          MineAds
-        </span>
       </Link>
       <div className="flex items-center gap-3 sm:gap-6">
         <ThemeSwitch />

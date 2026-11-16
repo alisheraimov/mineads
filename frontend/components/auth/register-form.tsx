@@ -41,7 +41,7 @@ export function RegisterForm() {
 
   return (
     <div className="flex w-full max-w-[360px] flex-col gap-6">
-      <AuthIntro title="Create your account" description="Get started with MineAds." />
+      <AuthIntro title="Create your account" description="Get started with VoxelAds." />
       <Button asChild variant="outline" className="h-10 w-full">
         <a href={googleRedirectUrl()}>
           <GoogleMark />

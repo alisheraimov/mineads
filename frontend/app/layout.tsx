@@ -10,7 +10,8 @@ import { THEME_INIT_SCRIPT } from "@/lib/theme";
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 
 export const metadata: Metadata = {
-  title: "MineAds",
+  metadataBase: new URL("https://voxelads.com"),
+  title: "VoxelAds",
   description: "Minecraft server ads and monetization.",
   icons: {
     icon: { url: "/favicon.svg", type: "image/svg+xml", sizes: "any" },

@@ -46,7 +46,7 @@ export function ServerDetailPage({ id }: { id: number }) {
 
   if (!server) return <><ServerBreadcrumb current="Server details" />{error ? <div role="alert"><p>{error}</p><Button className="mt-4" onClick={() => setRetry((value) => value + 1)}>Try again</Button></div> : <p role="status">Loading server…</p>}</>;
   const issues: string[] = [];
-  if (server.plugin_update_available) issues.push("Your MineAds plugin is outdated. Install the latest version when the plugin download is available.");
+  if (server.plugin_update_available) issues.push("Your VoxelAds plugin is outdated. Install the latest version when the plugin download is available.");
   if (server.status === "pending") issues.push(server.setup_token_expires_at && new Date(server.setup_token_expires_at) <= new Date() ? "Your setup token has expired. Regenerate a token to activate the plugin." : "The plugin has not been activated. Complete setup to connect this server.");
   if (server.status === "offline") issues.push("No heartbeat received in the last five minutes. Check that the server and plugin are running.");
   if (server.status === "suspended") issues.push("This server is suspended. Contact support before reconnecting.");

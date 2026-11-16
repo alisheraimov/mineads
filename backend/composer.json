@@ -1,9 +1,9 @@
 {
     "$schema": "https://getcomposer.org/schema.json",
-    "name": "mineads/backend",
+    "name": "voxelads/backend",
     "type": "project",
-    "description": "MineAds backend API.",
-    "keywords": ["mineads", "advertising", "minecraft", "laravel"],
+    "description": "VoxelAds backend API.",
+    "keywords": ["voxelads", "advertising", "minecraft", "laravel"],
     "license": "MIT",
     "require": {
         "php": "^8.3",
