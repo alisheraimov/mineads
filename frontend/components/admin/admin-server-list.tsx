@@ -1,4 +1,5 @@
 "use client";
+import { useServerCategories, ServerCategoryFeedback } from "@/components/server-categories";
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Info, RefreshCw, SlidersHorizontal, X } from "lucide-react";
@@ -13,11 +14,12 @@ import { UserSelect, UsersError, UsersLoading } from "./user-shared";
 import { CampaignPagination } from "./admin-campaign-shared";
 import { adminServerList, stateLabel } from "@/lib/admin-servers";
 import { userDateTime } from "@/lib/admin-users";
-import { serverCategories } from "@/lib/servers";
+
 import { useAdminQuery } from "./use-admin-query";
 import { PublisherFilter, PublisherLink, ServerBreadcrumb, ServerState, useServerFilters } from "./admin-server-shared";
 
 export function AdminServerList() {
+ const { categories: serverCategories, ...categoryState } = useServerCategories();
  const {params,query,filter,router,pathname}=useServerFilters();
  const loader=useCallback((signal:AbortSignal)=>adminServerList(query,signal),[query]);
  const {data,error,loading,refresh}=useAdminQuery(loader,query);
@@ -32,7 +34,7 @@ export function AdminServerList() {
  <div className="space-y-3"><div className="flex flex-wrap items-center gap-3"><ServerSearch value={params.get("search")??""} onChange={v=>filter("search",v)} placeholder="Search name, host or server ID"/><PublisherFilter value={params.get("publisher")??"all"} onChange={v=>filter("publisher",v)}/>
  <Popover><PopoverTrigger asChild><Button variant="outline" className="h-9"><SlidersHorizontal className="size-4"/>Filters{secondaryCount>0&&<span className="rounded bg-muted px-1.5 text-xs tabular-nums">{secondaryCount}</span>}</Button></PopoverTrigger><PopoverContent align="start" className="w-80 space-y-4"><h2 className="text-sm font-medium">Filter servers</h2>
  <div className="space-y-2"><p className="text-sm font-medium">Connection</p><UserSelect className="w-full bg-background data-[size=default]:h-9" label="Filter connection" value={params.get("connection")??"all"} onChange={v=>filter("connection",v)} options={["all","online","offline","never_connected"].map(value=>({value,label:value==="all"?"All connection states":stateLabel(value)}))}/></div>
- <div className="space-y-2"><p className="text-sm font-medium">Category</p><UserSelect className="w-full bg-background data-[size=default]:h-9" label="Filter category" value={params.get("category")??"all"} onChange={v=>filter("category",v)} options={[{value:"all",label:"All categories"},...serverCategories.map(value=>({value,label:value==="smp"?"SMP":stateLabel(value)}))]}/></div>
+ <ServerCategoryFeedback {...categoryState}/><div className="space-y-2"><p className="text-sm font-medium">Category</p><UserSelect className="w-full bg-background data-[size=default]:h-9" disabled={categoryState.loading || !!categoryState.error} label="Filter category" value={params.get("category")??"all"} onChange={v=>filter("category",v)} options={[{value:"all",label:"All categories"},...serverCategories.map(value=>({value,label:value==="smp"?"SMP":stateLabel(value)}))]}/></div>
  <div className="space-y-2"><p className="text-sm font-medium">Server access</p><UserSelect className="w-full bg-background data-[size=default]:h-9" label="Filter operational status" value={params.get("status")??"all"} onChange={v=>filter("status",v)} options={["all","active","inactive","suspended","pending"].map(value=>({value,label:value==="all"?"All server states":stateLabel(value)}))}/></div>
  <div className="space-y-2"><label className="flex items-center gap-2 text-sm"><Checkbox disabled={review!=="all"} checked={params.get("include_deleted")==="1"} onCheckedChange={v=>filter("include_deleted",v?"1":"")}/>Include deleted</label>{review!=="all"&&<p className="text-xs text-muted-foreground">Available in All servers.</p>}</div>
  {secondaryCount>0&&<Button variant="ghost" size="sm" onClick={()=>updateFilters({connection:"",category:"",status:"",include_deleted:""})}>Reset filters</Button>}</PopoverContent></Popover>

@@ -25,7 +25,7 @@ class ServerController extends Controller
     public function index(Request $request): JsonResponse
     {
         $this->view($request);
-        $input = $request->validate(['search' => ['nullable', 'string', 'max:255'], 'review' => ['nullable', Rule::in(['all', 'pending_review', 'approved', 'rejected', 'awaiting_activation'])], 'publisher' => ['nullable', 'integer', 'min:1'], 'connection' => ['nullable', Rule::in(['online', 'offline', 'never_connected'])], 'category' => ['nullable', Rule::in(['survival', 'skyblock', 'factions', 'minigames', 'creative', 'anarchy', 'smp', 'other'])], 'status' => ['nullable', Rule::in(['active', 'inactive', 'suspended', 'pending'])], 'include_deleted' => ['sometimes', 'boolean'], 'page' => ['sometimes', 'integer', 'min:1'], 'per_page' => ['sometimes', Rule::in([10, 25, 50])]]);
+        $input = $request->validate(['search' => ['nullable', 'string', 'max:255'], 'review' => ['nullable', Rule::in(['all', 'pending_review', 'approved', 'rejected', 'awaiting_activation'])], 'publisher' => ['nullable', 'integer', 'min:1'], 'connection' => ['nullable', Rule::in(['online', 'offline', 'never_connected'])], 'category' => ['nullable', Rule::in(config('servers.categories'))], 'status' => ['nullable', Rule::in(['active', 'inactive', 'suspended', 'pending'])], 'include_deleted' => ['sometimes', 'boolean'], 'page' => ['sometimes', 'integer', 'min:1'], 'per_page' => ['sometimes', Rule::in([10, 25, 50])]]);
         $base = $this->service->query();
         $live = fn ($q) => $q->whereNull('deleted_at')->whereHas('publisherAccount.user');
         $counts = [];

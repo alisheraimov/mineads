@@ -2,7 +2,7 @@
 import { useCallback, useState } from "react";
 import Link from "next/link";
 import { formatDistanceToNowStrict } from "date-fns";
-import { CircleCheck, CirclePause, Clock3, Unplug } from "lucide-react";
+import { ArrowLeft, CircleCheck, CirclePause, Clock3, Unplug } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,7 +26,7 @@ export function AdminServerDetails({id}:{id:number}) {
  if(!data)return <div className="space-y-6"><ServerBreadcrumb name={"SRV-"+id}/>{error?<UsersError message={error} retry={refresh}/>:<UsersLoading/>}</div>;
  const editable=data.can_manage&&!loading&&!stale;
  const pending=data.review_status==="pending_review"&&data.activated_at&&data.status!=="suspended";
- return <div className="space-y-6"><ServerBreadcrumb name={data.name}/><div className="flex flex-wrap items-center justify-between gap-4"><div><h1 className="text-2xl font-semibold">{data.name}</h1><p className="mt-2 text-sm text-muted-foreground">SRV-{id} · Added {userDateTime(data.created_at)} · <PublisherLink publisher={data.publisher} canLink={data.can_view_publisher}/></p></div><div className="flex gap-2"><Button variant="outline" size="sm" onClick={()=>{setStale(false);refresh();}}>Refresh</Button><Button asChild variant="outline" size="sm"><Link href="/admin/servers">Back to servers</Link></Button></div></div>
+ return <div className="space-y-6"><ServerBreadcrumb name={data.name}/><div className="flex flex-wrap items-center justify-between gap-4"><div><h1 className="text-2xl font-semibold">{data.name}</h1><p className="mt-2 text-sm text-muted-foreground">SRV-{id} · Added {userDateTime(data.created_at)} · <PublisherLink publisher={data.publisher} canLink={data.can_view_publisher}/></p></div><div className="flex gap-2"><Button variant="outline" size="sm" onClick={()=>{setStale(false);refresh();}}>Refresh</Button><Button asChild variant="outline" size="sm"><Link href="/admin/servers"><ArrowLeft aria-hidden="true" />Back to servers</Link></Button></div></div>
  <Tabs value={tab} onValueChange={v=>filter("tab",v)}><TabsList><TabsTrigger value="overview">Overview</TabsTrigger><TabsTrigger value="activity">Activity & validation</TabsTrigger><TabsTrigger value="history">History</TabsTrigger></TabsList></Tabs>
  <ServerReadiness data={data}/>
  {notice&&<p role="status" className="text-sm">{notice}</p>}{error&&<UsersError message={error} retry={refresh}/>}

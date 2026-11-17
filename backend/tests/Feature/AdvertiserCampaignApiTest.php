@@ -20,6 +20,19 @@ class AdvertiserCampaignApiTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_campaign_options_and_targeting_follow_all_configured_categories(): void
+    {
+        $categories = [...config('servers.categories'), 'custom-mode'];
+        config(['servers.categories' => $categories]);
+        $this->signInAdvertiser();
+
+        $this->getJson('/api/advertiser/campaigns/options')->assertOk()
+            ->assertJsonPath('data.server_categories', $categories);
+        $this->postJson('/api/advertiser/campaigns', [
+            ...$this->payload(), 'server_categories' => $categories,
+        ])->assertCreated();
+    }
+
     protected function setUp(): void
     {
         parent::setUp();

@@ -40,7 +40,7 @@ class StoreServerRequest extends FormRequest
                     $fail('Enter a valid domain or IP address, optionally followed by a port.');
                 }
             }, Rule::unique('servers', 'host')->where('publisher_account_id', $this->user()->publisherAccount?->id)->whereNull('deleted_at')->ignore($this->route('server') ?? 0)],
-            'category' => ['required', Rule::in(['survival', 'skyblock', 'factions', 'minigames', 'creative', 'anarchy', 'smp', 'other'])],
+            'category' => ['required', Rule::in(config('servers.categories'))],
         ];
     }
 

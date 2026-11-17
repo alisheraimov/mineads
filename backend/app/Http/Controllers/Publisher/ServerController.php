@@ -25,7 +25,7 @@ class ServerController extends Controller
         $filters = $request->validate([
             'search' => ['nullable', 'string', 'max:255'],
             'status' => ['nullable', Rule::in(['pending', 'active', 'offline', 'inactive', 'suspended'])],
-            'category' => ['nullable', Rule::in($this->categories())],
+            'category' => ['nullable', Rule::in(config('servers.categories'))],
             'page' => ['nullable', 'integer', 'min:1'],
         ]);
         $query = $publisher->servers()->with('latestHeartbeat');
@@ -218,10 +218,5 @@ class ServerController extends Controller
             'plugin_update_available' => config('publisher.latest_plugin_version') && $heartbeat?->plugin_version
                 ? version_compare($heartbeat->plugin_version, config('publisher.latest_plugin_version'), '<') : null,
         ];
-    }
-
-    private function categories(): array
-    {
-        return ['survival', 'skyblock', 'factions', 'minigames', 'creative', 'anarchy', 'smp', 'other'];
     }
 }

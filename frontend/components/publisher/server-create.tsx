@@ -1,4 +1,5 @@
 "use client";
+import { useServerCategories, ServerCategoryFeedback } from "@/components/server-categories";
 
 import Link from "next/link";
 import { FormEvent, useState } from "react";
@@ -8,9 +9,10 @@ import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectVa
 import { ServerBreadcrumb, UnavailablePluginLinks, panelClass } from "@/components/publisher/server-shared";
 import { ServerSetup } from "@/components/publisher/server-setup";
 import { ApiError } from "@/lib/auth";
-import { SetupResult, createServer, serverCategories } from "@/lib/servers";
+import { SetupResult, createServer } from "@/lib/servers";
 
 export function ServerCreatePage() {
+ const { categories: serverCategories, ...categoryState } = useServerCategories();
   const [setup, setSetup] = useState<SetupResult | null>(null);
   const [error, setError] = useState("");
   const [fields, setFields] = useState<Record<string, string[]>>({});
@@ -33,7 +35,7 @@ export function ServerCreatePage() {
         <label className="block space-y-2 text-sm"><span>Server host</span><Input name="host" required maxLength={253} placeholder="play.example.com:25565" aria-invalid={!!fields.host} /><span className="block text-xs text-muted-foreground">The domain or IP players use to connect. An optional port is supported.</span>{fields.host && <span className="text-xs text-destructive">{fields.host[0]}</span>}</label>
         <div className="space-y-2 text-sm">
           <label htmlFor="server-category">Server category</label>
-          <Select name="category" required defaultValue="">
+          <Select name="category" required defaultValue="" disabled={categoryState.loading || !!categoryState.error}>
             <SelectTrigger id="server-category" className="w-full data-[size=default]:h-10" aria-invalid={!!fields.category} aria-describedby={fields.category ? "server-category-error" : undefined}>
               <SelectValue placeholder="Select a category" />
             </SelectTrigger>
@@ -45,10 +47,11 @@ export function ServerCreatePage() {
               </SelectGroup>
             </SelectContent>
           </Select>
+          <ServerCategoryFeedback {...categoryState} />
           {fields.category && <p id="server-category-error" className="text-xs text-destructive">{fields.category[0]}</p>}
         </div>
         {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
-        <div className="flex gap-2"><Button type="submit" disabled={busy}>{busy ? "Creating…" : "Create server"}</Button><Button asChild variant="outline"><Link href="/publisher/servers">Cancel</Link></Button></div>
+        <div className="flex gap-2"><Button type="submit" disabled={busy || categoryState.loading || !!categoryState.error}>{busy ? "Creating…" : "Create server"}</Button><Button asChild variant="outline"><Link href="/publisher/servers">Cancel</Link></Button></div>
       </form><aside className={`${panelClass} h-fit space-y-4`}><h2 className="font-semibold">What happens next</h2><p className="text-sm">Your server starts as Pending until the plugin connects.</p><p className="text-sm text-muted-foreground">Use the one-time setup token to activate the plugin. Minecraft and plugin versions are detected from the first heartbeat.</p><UnavailablePluginLinks /></aside>
     </div>}
   </>;

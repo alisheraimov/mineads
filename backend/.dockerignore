@@ -2,6 +2,5 @@
 .idea
 .phpunit.cache
 .phpunit.result.cache
-database/database.sqlite
 storage/logs/*.log
 vendor

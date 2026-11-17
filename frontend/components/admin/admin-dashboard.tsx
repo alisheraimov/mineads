@@ -5,7 +5,7 @@ import { formatUsd as money } from "@/lib/money";
 import { useCallback, useEffect, useId, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "@/lib/navigation";
-import { ArrowRight, CalendarDays, ChevronRight, Info, Loader2, RefreshCw, ShieldCheck } from "lucide-react";
+import { ArrowLeft, ArrowRight, CalendarDays, ChevronRight, Info, Loader2, RefreshCw, ShieldCheck } from "lucide-react";
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import { AccountHeader } from "@/components/account/account-header";
 import { AdvertiserSidebar } from "@/components/advertiser/advertiser-shell";
@@ -224,7 +224,7 @@ export function AdminDashboard() {
         </main>
       </div>
       <Dialog open={!!comingSoon} onOpenChange={open => { if (!open) setComingSoon(""); }}>
-        <DialogContent><DialogHeader><DialogTitle>{comingSoon}</DialogTitle><DialogDescription>This section is coming soon. The overview shows live totals; the detailed management view will be added in a later milestone.</DialogDescription></DialogHeader><Button variant="outline" onClick={() => setComingSoon("")}>Back to overview</Button></DialogContent>
+        <DialogContent><DialogHeader><DialogTitle>{comingSoon}</DialogTitle><DialogDescription>This section is coming soon. The overview shows live totals; the detailed management view will be added in a later milestone.</DialogDescription></DialogHeader><Button variant="outline" onClick={() => setComingSoon("")}><ArrowLeft aria-hidden="true" />Back to overview</Button></DialogContent>
       </Dialog>
       <Dialog open={customOpen} onOpenChange={setCustomOpen}>
         <DialogContent><DialogHeader><DialogTitle>Custom date range</DialogTitle><DialogDescription>Select up to 366 days. Dates and reporting boundaries use UTC.</DialogDescription></DialogHeader>

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "@/lib/navigation";
 import { useEffect, useState } from "react";
-import { Check, ChevronsUpDown, Info, Loader2, X } from "lucide-react";
+import { ArrowLeft, Check, ChevronsUpDown, Info, Loader2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { DateTimePicker } from "@/components/ui/date-picker";
@@ -553,6 +553,7 @@ export function CampaignWizard({ id }: { id?: string }) {
                       setError("");
                     }}
                   >
+                    <ArrowLeft aria-hidden="true" />
                     Back
                   </Button>
                 )}

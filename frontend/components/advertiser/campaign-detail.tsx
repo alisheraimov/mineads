@@ -133,6 +133,12 @@ export function CampaignDetailsPage({ id }: { id: string }) {
             </div>
             {data.status !== "ended" && (
               <div className="flex flex-wrap gap-2">
+                <Button asChild>
+                  <Link href={`/advertiser/creatives/new?campaign=${id}`}>
+                    <Plus aria-hidden="true" />
+                    Create creative
+                  </Link>
+                </Button>
                 <Button asChild variant="outline">
                   <Link href={`/advertiser/campaigns/${id}/edit`}>Edit</Link>
                 </Button>
@@ -172,6 +178,32 @@ export function CampaignDetailsPage({ id }: { id: string }) {
               status={data.delivery_eligible ? "eligible" : "not eligible"}
             />
           </div>
+          {data.status !== "ended" && data.creatives.length === 0 && (
+            <section
+              className="flex flex-col gap-4 rounded-lg border border-zinc-300/70 bg-gradient-to-r from-zinc-100 via-white to-zinc-200 p-6 sm:flex-row sm:items-center sm:justify-between dark:border-zinc-600/50 dark:from-zinc-800 dark:via-zinc-900 dark:to-zinc-700/60"
+              aria-labelledby="campaign-create-creative-title"
+            >
+              <div>
+                <h2
+                  id="campaign-create-creative-title"
+                  className="text-base font-semibold"
+                >
+                  Next step: create your first creative
+                </h2>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  This campaign has no creatives yet. Create a creative and
+                  submit it for review. Ads can start serving once a creative is
+                  approved and the campaign is eligible for delivery.
+                </p>
+              </div>
+              <Button asChild className="shrink-0 self-start sm:self-auto">
+                <Link href={`/advertiser/creatives/new?campaign=${id}`}>
+                  <Plus aria-hidden="true" />
+                  Create creative
+                </Link>
+              </Button>
+            </section>
+          )}
           {data.delivery_issues.length > 0 && (
             <Alert>
               <CircleAlert />

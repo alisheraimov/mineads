@@ -17,7 +17,11 @@ use App\Http\Controllers\PluginApiController;
 use App\Http\Controllers\Publisher\DashboardController as PublisherDashboardController;
 use App\Http\Controllers\Publisher\PayoutController as PublisherPayoutController;
 use App\Http\Controllers\Publisher\ServerController as PublisherServerController;
+use App\Http\Controllers\ServerCategoryController;
 use Illuminate\Support\Facades\Route;
+
+Route::get('/server-categories', ServerCategoryController::class)
+    ->middleware(['auth:sanctum', 'active']);
 
 Route::prefix('admin')->middleware(['auth:sanctum', 'active', 'admin', 'verified'])->group(function () {
     Route::get('/finance', [FinanceController::class, 'overview']);

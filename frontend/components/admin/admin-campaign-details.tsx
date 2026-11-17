@@ -3,7 +3,7 @@
 import { useCallback, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "@/lib/navigation";
-import { RefreshCw } from "lucide-react";
+import { ArrowLeft, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -30,10 +30,10 @@ export function AdminCampaignDetails({ id }: { id: string }) {
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [notice, setNotice] = useState("");
   const data = result?.data;
-  if (!data) return <div className="space-y-6"><AdminCampaignBreadcrumb /><Button asChild variant="outline"><Link href="/admin/campaigns">Back to campaigns</Link></Button>{error ? <CampaignError message={error} retry={refresh} /> : <CampaignLoading label="Loading campaign" />}</div>;
+  if (!data) return <div className="space-y-6"><AdminCampaignBreadcrumb /><Button asChild variant="outline"><Link href="/admin/campaigns"><ArrowLeft aria-hidden="true" />Back to campaigns</Link></Button>{error ? <CampaignError message={error} retry={refresh} /> : <CampaignLoading label="Loading campaign" />}</div>;
   return <div className="space-y-6">
     <AdminCampaignBreadcrumb name={data.name} />
-    <div className="flex flex-wrap items-center justify-between gap-4"><div className="min-w-0"><h1 className="break-words text-2xl font-semibold">{data.name}</h1><div className="mt-2 flex flex-wrap items-center gap-3 text-sm text-muted-foreground"><span className="text-xs">CMP-{data.id}</span><AdvertiserIdentity advertiser={data.advertiser} canLink={data.can_view_advertiser} /><CampaignState status={data.status} /></div></div><div className="flex gap-2"><Button variant="outline" size="icon" disabled={loading} onClick={refresh} aria-label="Refresh campaign"><RefreshCw className={loading ? "animate-spin" : ""} /></Button><Button asChild variant="outline"><Link href="/admin/campaigns">Back to campaigns</Link></Button></div></div>
+    <div className="flex flex-wrap items-center justify-between gap-4"><div className="min-w-0"><h1 className="break-words text-2xl font-semibold">{data.name}</h1><div className="mt-2 flex flex-wrap items-center gap-3 text-sm text-muted-foreground"><span className="text-xs">CMP-{data.id}</span><AdvertiserIdentity advertiser={data.advertiser} canLink={data.can_view_advertiser} /><CampaignState status={data.status} /></div></div><div className="flex gap-2"><Button variant="outline" size="icon" disabled={loading} onClick={refresh} aria-label="Refresh campaign"><RefreshCw className={loading ? "animate-spin" : ""} /></Button><Button asChild variant="outline"><Link href="/admin/campaigns"><ArrowLeft aria-hidden="true" />Back to campaigns</Link></Button></div></div>
     {!data.can_view_money && <p className="text-xs leading-5 text-muted-foreground">Read-only access · Configuration and delivery counts are visible. Monetary values and management actions are restricted.</p>}
     {notice && <p role="status" className="rounded-lg border border-emerald-500/20 bg-emerald-500/10 p-4 text-sm">{notice}</p>}
     {error && <CampaignError message={"Showing previously loaded data. " + error} retry={refresh} />}

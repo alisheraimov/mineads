@@ -4,7 +4,7 @@ import { useCallback, useState } from "react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useRouter } from "@/lib/navigation";
-import { RefreshCw } from "lucide-react";
+import { ArrowLeft, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -50,7 +50,7 @@ export function AdminCreativeDetails({ id }: { id: string }) {
   }
   if (!data) return <div className="space-y-6"><CreativeBreadcrumb />{error ? <CampaignError message={error} retry={refresh} /> : <CampaignLoading label="Loading creative" />}</div>;
   const deletedEvent = data.history.find(event => event.action === "deleted");
-  return <div className="space-y-6"><CreativeBreadcrumb id={data.id} /><div className="flex flex-wrap items-center justify-between gap-4"><div><h1 className="text-2xl font-semibold">Creative CR-{data.id}</h1><p className="mt-2 text-sm text-muted-foreground">{data.campaign?.name ?? "Campaign unavailable"} · {data.advertiser?.name ?? "Advertiser unavailable"}</p></div><div className="flex gap-2"><Button variant="outline" size="icon-sm" aria-label="Refresh creative" disabled={loading || busy} onClick={refresh}><RefreshCw className={loading ? "animate-spin" : ""} /></Button><Button asChild variant="outline" size="sm"><Link href="/admin/creatives">Back to creatives</Link></Button></div></div>
+  return <div className="space-y-6"><CreativeBreadcrumb id={data.id} /><div className="flex flex-wrap items-center justify-between gap-4"><div><h1 className="text-2xl font-semibold">Creative CR-{data.id}</h1><p className="mt-2 text-sm text-muted-foreground">{data.campaign?.name ?? "Campaign unavailable"} · {data.advertiser?.name ?? "Advertiser unavailable"}</p></div><div className="flex gap-2"><Button variant="outline" size="icon-sm" aria-label="Refresh creative" disabled={loading || busy} onClick={refresh}><RefreshCw className={loading ? "animate-spin" : ""} /></Button><Button asChild variant="outline" size="sm"><Link href="/admin/creatives"><ArrowLeft aria-hidden="true" />Back to creatives</Link></Button></div></div>
     <div className="flex flex-wrap items-center gap-3"><CampaignState status={data.status} /><p className="text-xs text-muted-foreground">Submitted {userDateTime(data.submitted_at)}</p>{data.is_paused && <Badge variant="secondary">Paused by advertiser</Badge>}</div>
     {error && <CampaignError message={"Showing previously loaded data. " + error} retry={refresh} />}
     {notice && <p role="status" className="rounded-lg border bg-card p-4 text-sm">{notice}</p>}

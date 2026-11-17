@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useRouter } from "@/lib/navigation";
 import { useEffect, useState } from "react";
-import { Loader2, Send } from "lucide-react";
+import { Info, Loader2, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -222,13 +222,14 @@ export function CreativeForm({ id }: { id?: string }) {
                 }
               />
             </div>
-            <Alert>
-              <AlertDescription>
+            <p className="flex items-start gap-2 text-sm text-muted-foreground">
+              <Info aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
+              <span>
                 {id
                   ? "Changes to the message, URL or language require another review. Renaming preserves approval."
                   : "New creatives require approval before they can serve."}
-              </AlertDescription>
-            </Alert>
+              </span>
+            </p>
             {error && <CampaignError message={error} />}
             <div className="flex flex-wrap justify-between gap-3">
               <Button

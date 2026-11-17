@@ -17,6 +17,16 @@ class AdminServersApiTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_category_filter_uses_the_shared_configuration(): void
+    {
+        config(['servers.categories' => ['custom-mode']]);
+        Server::factory()->create(['category' => 'custom-mode']);
+        $this->actingAs($this->admin());
+
+        $this->getJson('/api/admin/servers?category=custom-mode')->assertOk()->assertJsonCount(1, 'data');
+        $this->getJson('/api/admin/servers?category=survival')->assertUnprocessable()->assertJsonValidationErrors('category');
+    }
+
     protected function setUp(): void
     {
         parent::setUp();

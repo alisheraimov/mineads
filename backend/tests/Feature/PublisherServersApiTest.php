@@ -18,6 +18,39 @@ class PublisherServersApiTest extends TestCase
 {
     use RefreshDatabase;
 
+    #[TestWith(['advertiser'])]
+    #[TestWith(['publisher'])]
+    #[TestWith(['admin'])]
+    public function test_category_options_are_available_to_each_account_type(string $role): void
+    {
+        config(['servers.categories' => ['custom-mode', 'smp']]);
+
+        $this->actingAs(User::factory()->create(['role' => $role]))
+            ->getJson('/api/server-categories')
+            ->assertOk()->assertExactJson(['data' => ['custom-mode', 'smp']]);
+    }
+
+    public function test_category_options_require_authentication(): void
+    {
+        $this->getJson('/api/server-categories')->assertUnauthorized();
+    }
+
+    public function test_server_creation_and_filters_follow_configured_categories(): void
+    {
+        config(['servers.categories' => ['custom-mode']]);
+        $publisher = PublisherAccount::factory()->create();
+        $this->actingAs($publisher->user);
+
+        $this->postJson('/api/publisher/servers', [
+            'name' => 'Custom server', 'host' => 'custom.example.com', 'category' => 'custom-mode',
+        ])->assertCreated()->assertJsonPath('data.server.category', 'custom-mode');
+        $this->getJson('/api/publisher/servers?category=custom-mode')->assertOk()->assertJsonCount(1, 'data');
+        $this->getJson('/api/publisher/servers?category=survival')->assertUnprocessable()->assertJsonValidationErrors('category');
+        $this->postJson('/api/publisher/servers', [
+            'name' => 'Old category', 'host' => 'old.example.com', 'category' => 'survival',
+        ])->assertUnprocessable()->assertJsonValidationErrors('category');
+    }
+
     protected function setUp(): void
     {
         parent::setUp();

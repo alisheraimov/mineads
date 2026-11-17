@@ -1,6 +1,5 @@
 import { apiRequest, getToken } from "@/lib/auth";
 
-export const serverCategories = ["survival", "skyblock", "factions", "minigames", "creative", "anarchy", "smp", "other"] as const;
 export type ManagedServer = {
   review_status: string; review_reason: string | null; legacy_approval: boolean; suspension_reason: string | null;
   id: number; name: string; host: string; category: string;

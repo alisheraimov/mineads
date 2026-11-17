@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
 import { useRouter } from "@/lib/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -56,7 +57,7 @@ export function ServerDetailPage({ id }: { id: number }) {
 
   return <>
     <ServerBreadcrumb current={server.name} />
-    <div className="flex flex-wrap items-center justify-between gap-4"><div><h1 className="text-2xl font-semibold">{server.name}</h1><p className="mt-2 text-sm text-muted-foreground">Monitor performance, connection health and server setup.</p></div><Button asChild variant="outline"><Link href="/publisher/servers">Back to servers</Link></Button></div>
+    <div className="flex flex-wrap items-center justify-between gap-4"><div><h1 className="text-2xl font-semibold">{server.name}</h1><p className="mt-2 text-sm text-muted-foreground">Monitor performance, connection health and server setup.</p></div><Button asChild variant="outline"><Link href="/publisher/servers"><ArrowLeft aria-hidden="true" />Back to servers</Link></Button></div>
     {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
     {setup && <ServerSetup key={setup.setup_token} setup={setup} onActivated={load} />}
     <PublisherServerReview server={server} onSaved={setServer} />

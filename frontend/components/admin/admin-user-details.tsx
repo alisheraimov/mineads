@@ -5,7 +5,7 @@ import { formatUsd as money } from "@/lib/money";
 import { useEffect, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "@/lib/navigation";
-import { ArrowRight } from "lucide-react";
+import { ArrowLeft, ArrowRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -37,7 +37,7 @@ export function AdminUserDetails({ id }: {id:string}) {
     });
     return ()=>controller.abort();
   },[id,attempt,router]);
-  if(error && !user) return <div className="space-y-6"><UsersBreadcrumb /><Button asChild variant="outline"><Link href="/admin/users">Back to users</Link></Button><UsersError message={error} retry={()=>setAttempt(v=>v+1)} /></div>;
+  if(error && !user) return <div className="space-y-6"><UsersBreadcrumb /><Button asChild variant="outline"><Link href="/admin/users"><ArrowLeft aria-hidden="true" />Back to users</Link></Button><UsersError message={error} retry={()=>setAttempt(v=>v+1)} /></div>;
   if(!user) return <UsersLoading />;
   const account = user.account;
   const permissionGroups = new Map<string, string>();
@@ -47,7 +47,7 @@ export function AdminUserDetails({ id }: {id:string}) {
   const permissions = Array.from(permissionGroups, ([section,action])=>({section,action}));
   return <div className="space-y-6">
     <UsersBreadcrumb name={user.name} />
-    <div className="flex flex-wrap items-center justify-between gap-4"><div><h1 className="text-2xl font-semibold">{user.name}</h1><div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground"><span>U-{user.id}</span><Badge variant="secondary">{roleLabel(user.role)}</Badge><UserStatus status={user.status} /></div></div><Button asChild variant="outline"><Link href="/admin/users">Back to users</Link></Button></div>
+    <div className="flex flex-wrap items-center justify-between gap-4"><div><h1 className="text-2xl font-semibold">{user.name}</h1><div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground"><span>U-{user.id}</span><Badge variant="secondary">{roleLabel(user.role)}</Badge><UserStatus status={user.status} /></div></div><Button asChild variant="outline"><Link href="/admin/users"><ArrowLeft aria-hidden="true" />Back to users</Link></Button></div>
     {notice && <p role="status" className="rounded-lg border border-emerald-500/20 bg-emerald-500/10 p-4 text-sm">{notice}</p>}
     {error && <UsersError message={error} retry={()=>setAttempt(v=>v+1)} />}
     {user.status === "suspended" && <div className="space-y-1 rounded-lg border border-amber-500/20 bg-amber-500/10 p-4 text-sm"><p className="font-medium">User suspended</p><p className="whitespace-pre-wrap break-words">{user.suspension_reason}</p>{user.suspended_at && <p className="text-xs text-muted-foreground">{userDateTime(user.suspended_at)}</p>}</div>}
@@ -70,7 +70,7 @@ export function AdminUserDetails({ id }: {id:string}) {
     </div>
     <p className="text-xs text-muted-foreground">Account identity is read-only here. Operational details stay in the relevant console section.</p>
     {action && <UserActionDialog key={action} action={action} user={user} roles={loaded?.roles ?? []} onClose={()=>setAction(undefined)} onSaved={()=>{setAction(undefined);setNotice(action === "delete" ? "User deleted. Historical records have been retained." : action === "role" ? "Admin role updated. Existing sessions have been signed out." : action === "suspend" ? "User suspended. Existing sessions have been signed out." : "User reactivated. Existing restrictions still apply.");setAttempt(v=>v+1);}} />}
-    <Dialog open={!!operational} onOpenChange={open=>{if(!open)setOperational("");}}><DialogContent><DialogHeader><DialogTitle>{operational}</DialogTitle><DialogDescription>This management section is coming soon. The account summary above shows the current totals for this user.</DialogDescription></DialogHeader><Button variant="outline" onClick={()=>setOperational("")}>Back to user</Button></DialogContent></Dialog>
+    <Dialog open={!!operational} onOpenChange={open=>{if(!open)setOperational("");}}><DialogContent><DialogHeader><DialogTitle>{operational}</DialogTitle><DialogDescription>This management section is coming soon. The account summary above shows the current totals for this user.</DialogDescription></DialogHeader><Button variant="outline" onClick={()=>setOperational("")}><ArrowLeft aria-hidden="true" />Back to user</Button></DialogContent></Dialog>
   </div>;
 }
 

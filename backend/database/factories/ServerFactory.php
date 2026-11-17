@@ -15,7 +15,7 @@ class ServerFactory extends Factory
             'publisher_account_id' => PublisherAccount::factory(),
             'name' => fake()->words(2, true).' MC',
             'host' => fake()->domainName(),
-            'category' => fake()->randomElement(['survival', 'skyblock', 'minigames', 'factions']),
+            'category' => fake()->randomElement(config('servers.categories')),
             'status' => 'active',
             'review_status' => 'approved',
             'legacy_approval' => true,

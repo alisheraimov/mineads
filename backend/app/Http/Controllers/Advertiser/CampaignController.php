@@ -25,7 +25,7 @@ class CampaignController extends Controller
 
         return response()->json(['data' => [
             'countries' => config('campaigns.countries'),
-            'server_categories' => config('campaigns.server_categories'),
+            'server_categories' => config('servers.categories'),
             'available_balance_micros' => $this->balance($account),
         ]]);
     }

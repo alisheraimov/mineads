@@ -1,4 +1,5 @@
 "use client";
+import { useServerCategories, ServerCategoryFeedback } from "@/components/server-categories";
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
@@ -8,9 +9,10 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AddServerButton } from "@/components/publisher/publisher-shell";
 import { ServerBreadcrumb, ServerMetric, ServerStatus, utcDate } from "@/components/publisher/server-shared";
-import { ServerList, listServers, serverCategories } from "@/lib/servers";
+import { ServerList, listServers } from "@/lib/servers";
 
 export function ServerListPage() {
+ const { categories: serverCategories, ...categoryState } = useServerCategories();
   const [data, setData] = useState<ServerList | null>(null);
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("");
@@ -62,7 +64,7 @@ export function ServerListPage() {
           </SelectGroup>
         </SelectContent>
       </Select>
-      <Select value={category || "all"} onValueChange={(value) => { setCategory(value === "all" ? "" : value); setPage(1); }}>
+      <Select disabled={categoryState.loading || !!categoryState.error} value={category || "all"} onValueChange={(value) => { setCategory(value === "all" ? "" : value); setPage(1); }}>
         <SelectTrigger aria-label="Filter by category" className="min-w-40 data-[size=default]:h-10">
           <SelectValue placeholder="All categories" />
         </SelectTrigger>
@@ -77,6 +79,7 @@ export function ServerListPage() {
       </Select>
       <Button variant="outline" disabled={loading} onClick={() => setRefresh((value) => value + 1)}>Refresh status</Button>
     </div>
+    <ServerCategoryFeedback {...categoryState} />
     {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
     {loading && <p role="status" className="flex items-center gap-2 text-sm text-muted-foreground"><Loader2 className="size-4 animate-spin" />Loading servers…</p>}
     {data && <>
