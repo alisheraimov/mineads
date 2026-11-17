@@ -1,14 +1,15 @@
 "use client";
+import { SummaryCard } from "@/components/ui/summary-card";
+
 
 import { useCallback, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "@/lib/navigation";
-import { ArrowLeft, ChevronRight, ChevronsUpDown, Check, Download, RefreshCw, Info } from "lucide-react";
+import { ArrowLeft, ChevronRight, ChevronsUpDown, Check, Download, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandInput, CommandList, CommandGroup, CommandItem, CommandEmpty } from "@/components/ui/command";
-import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { exportFinance, getFinanceOptions, financeLabel, type FinanceIdentity } from "@/lib/admin-finance";
 import { ApiError, clearToken } from "@/lib/auth";
 import { useAdminQuery } from "./use-admin-query";
@@ -19,8 +20,7 @@ export function FinanceHeader({ title, description, loading, refresh, detail = f
 export function FinanceStatus({ value }: { value: string }) { return <Badge variant="outline" className={value === "paid" || value === "payable" ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400" : value === "failed" || value === "held" ? "border-rose-500/20 bg-rose-500/10 text-rose-700 dark:text-rose-400" : value === "pending" || value === "pending_earning" ? "border-amber-500/20 bg-amber-500/10 text-amber-700 dark:text-amber-400" : "bg-muted text-muted-foreground"}>{value === "held" ? "Held · Suspended server" : financeLabel(value)}</Badge>; }
 export function FinanceIdentityLink({ data, canLink }: { data: FinanceIdentity | null; canLink: boolean }) { return data ? <div>{canLink ? <Link href={"/admin/users/" + data.id} className="text-sm hover:underline">{data.name}</Link> : <span className="text-sm">{data.name}</span>}<p className="mt-1 text-xs text-muted-foreground">U-{data.id}{data.deleted ? " · Deleted" : ""}</p></div> : <span className="text-muted-foreground">Unavailable account</span>; }
 export function FinanceMetric({ label, value, help, href, caption }: { label: string; value: string; help: string; href?: string; caption?: string }) {
- const body = <><div className="flex items-start justify-between gap-2"><span className="text-xs text-muted-foreground">{label}</span><Tooltip><TooltipTrigger asChild><button type="button" aria-label={"How " + label.toLowerCase() + " is calculated"} onClick={event => event.stopPropagation()} className="relative z-10 shrink-0 text-muted-foreground"><Info className="size-3.5" /></button></TooltipTrigger><TooltipContent className="max-w-72">{help}</TooltipContent></Tooltip></div><p className="mt-3 text-2xl font-semibold tabular-nums">{value}</p>{caption && <p className="mt-2 text-xs leading-5 text-muted-foreground">{caption}</p>}</>;
- return <div className="relative min-h-[122px] rounded-lg border bg-card p-5">{body}{href && <Link href={href} className="absolute inset-0 rounded-lg focus-visible:outline-2 focus-visible:outline-ring" aria-label={"View " + label.toLowerCase()} />}</div>;
+ return <SummaryCard label={label} value={value} help={help} href={href} caption={caption} />;
 }
 export function FinanceExport({ path, query }: { path: string; query: string }) {
  const [busy, setBusy] = useState(false), [error, setError] = useState(""); const router = useRouter();

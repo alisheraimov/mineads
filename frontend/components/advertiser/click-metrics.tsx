@@ -3,18 +3,18 @@ import type { ClickMetrics } from "@/lib/clicks";
 export function ClickMetricsSummary({ metrics }: { metrics: ClickMetrics }) {
   return (
     <div className="p-5">
-      <dl className="grid grid-cols-3 gap-4 text-sm">
+      <dl className="grid gap-5 sm:grid-cols-3">
         <div>
-          <dt className="text-xs text-muted-foreground">Unique clicks</dt>
-          <dd className="mt-1 font-semibold">{metrics.clicks.toLocaleString()}</dd>
+          <dt className="summary-label">Unique clicks</dt>
+          <dd className="summary-value mt-3">{metrics.clicks.toLocaleString()}</dd>
         </div>
         <div>
-          <dt className="text-xs text-muted-foreground">Raw link opens</dt>
-          <dd className="mt-1 font-semibold">{metrics.raw_clicks.toLocaleString()}</dd>
+          <dt className="summary-label">Raw link opens</dt>
+          <dd className="summary-value mt-3">{metrics.raw_clicks.toLocaleString()}</dd>
         </div>
         <div>
-          <dt className="text-xs text-muted-foreground">CTR</dt>
-          <dd className="mt-1 font-semibold">
+          <dt className="summary-label">CTR</dt>
+          <dd className="summary-value mt-3">
             {metrics.ctr == null ? "—" : `${metrics.ctr.toFixed(2)}%`}
           </dd>
         </div>

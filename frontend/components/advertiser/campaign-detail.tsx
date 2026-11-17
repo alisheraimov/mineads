@@ -1,10 +1,12 @@
 "use client";
+import { SummaryCard } from "@/components/ui/summary-card";
+
 
 import { ClickMetricsSummary } from "@/components/advertiser/click-metrics";
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { CircleAlert, Loader2, Pause, Play, Plus } from "lucide-react";
+import { ArrowRight, CircleAlert, Loader2, Pause, Play, Plus, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DateRangePicker } from "@/components/ui/date-picker";
 import { Label } from "@/components/ui/label";
@@ -133,12 +135,12 @@ export function CampaignDetailsPage({ id }: { id: string }) {
             </div>
             {data.status !== "ended" && (
               <div className="flex flex-wrap gap-2">
-                <Button asChild>
+                {data.creatives.length > 0 && <Button asChild>
                   <Link href={`/advertiser/creatives/new?campaign=${id}`}>
                     <Plus aria-hidden="true" />
                     Create creative
                   </Link>
-                </Button>
+                </Button>}
                 <Button asChild variant="outline">
                   <Link href={`/advertiser/campaigns/${id}/edit`}>Edit</Link>
                 </Button>
@@ -180,35 +182,52 @@ export function CampaignDetailsPage({ id }: { id: string }) {
           </div>
           {data.status !== "ended" && data.creatives.length === 0 && (
             <section
-              className="flex flex-col gap-4 rounded-lg border border-zinc-300/70 bg-gradient-to-r from-zinc-100 via-white to-zinc-200 p-6 sm:flex-row sm:items-center sm:justify-between dark:border-zinc-600/50 dark:from-zinc-800 dark:via-zinc-900 dark:to-zinc-700/60"
+              className="workspace-silver-panel overflow-hidden rounded-xl"
               aria-labelledby="campaign-create-creative-title"
             >
-              <div>
+              <div className="flex flex-col gap-5 p-6 sm:flex-row sm:items-center">
+              <div className="flex size-11 shrink-0 items-center justify-center rounded-xl border border-foreground/10 bg-background/80 shadow-sm">
+                <Sparkles className="size-5" aria-hidden="true" />
+              </div>
+              <div className="flex-1">
+                <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Get ready to launch</p>
                 <h2
                   id="campaign-create-creative-title"
                   className="text-base font-semibold"
                 >
                   Next step: create your first creative
                 </h2>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  This campaign has no creatives yet. Create a creative and
-                  submit it for review. Ads can start serving once a creative is
-                  approved and the campaign is eligible for delivery.
+                <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
+                  Add the message players will see and submit it for review.
+                  Ads can serve once a creative is approved and this campaign is eligible.
                 </p>
               </div>
               <Button asChild className="shrink-0 self-start sm:self-auto">
                 <Link href={`/advertiser/creatives/new?campaign=${id}`}>
-                  <Plus aria-hidden="true" />
                   Create creative
+                  <ArrowRight aria-hidden="true" />
                 </Link>
               </Button>
+              </div>
+              {data.delivery_issues.length > 0 && <div className="border-t border-foreground/10 bg-background/50 px-6 py-4">
+                <p className="flex items-center gap-2 text-xs font-medium">
+                  <CircleAlert className="size-3.5 text-amber-600 dark:text-amber-400" aria-hidden="true" />
+                  Before ads can serve
+                </p>
+                <ul className="mt-2 flex flex-wrap gap-x-6 gap-y-2 text-xs text-muted-foreground">
+                  {data.delivery_issues.map(issue => <li key={issue} className="flex items-center gap-2">
+                    <span className="size-1.5 rounded-full bg-amber-500" aria-hidden="true" />
+                    {issue}
+                  </li>)}
+                </ul>
+              </div>}
             </section>
           )}
-          {data.delivery_issues.length > 0 && (
-            <Alert>
+          {data.delivery_issues.length > 0 && (data.creatives.length > 0 || data.status === "ended") && (
+            <Alert className="border-amber-200 bg-amber-50/70 text-amber-950 dark:border-amber-400/20 dark:bg-amber-400/5 dark:text-amber-100">
               <CircleAlert />
               <AlertTitle>Delivery blocked</AlertTitle>
-              <AlertDescription>
+              <AlertDescription className="text-amber-800 dark:text-amber-200/80">
                 <ul className="list-inside list-disc space-y-1">
                   {data.delivery_issues.map((issue) => (
                     <li key={issue}>{issue}</li>
@@ -325,14 +344,14 @@ export function CampaignDetailsPage({ id }: { id: string }) {
                     aria-pressed={metric === key}
                     onClick={() => setMetric(key)}
                     className={cn(
-                      "min-w-0 border-t p-4 text-left transition-colors hover:bg-muted/50 focus-visible:z-10 focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-[-2px] sm:border-l sm:border-t-0 sm:p-6",
+                      "summary-metric min-w-0 border-t p-4 text-left transition-colors hover:bg-muted/50 focus-visible:z-10 focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-[-2px] sm:border-l sm:border-t-0 sm:p-6",
                       metric === key && "bg-muted/50",
                     )}
                   >
-                    <span className="block text-xs text-muted-foreground">
+                    <span className="summary-label block">
                       {metricLabels[key]}
                     </span>
-                    <span className="mt-1 block text-2xl font-semibold">
+                    <span className="summary-value mt-3">
                       {key === "impressions"
                         ? formatNumber(data.metrics.impressions)
                         : formatMicros(
@@ -374,13 +393,7 @@ export function CampaignDetailsPage({ id }: { id: string }) {
                 "Informational usage · no monthly cap",
               ],
             ].map(([label, value, caption]) => (
-              <div key={label} className="rounded-lg bg-card p-6">
-                <p className="text-sm text-muted-foreground">{label}</p>
-                <p className="mt-2 break-words text-xl font-semibold">
-                  {value}
-                </p>
-                <p className="mt-2 text-xs text-muted-foreground">{caption}</p>
-              </div>
+              <SummaryCard key={label} label={label} value={value} caption={caption} />
             ))}
           </div>
           <section className="space-y-5 rounded-lg border bg-card p-6">

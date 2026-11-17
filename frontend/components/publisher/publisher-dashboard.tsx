@@ -1,4 +1,6 @@
 "use client";
+import { SummaryCard } from "@/components/ui/summary-card";
+
 
 import { formatUsd as money } from "@/lib/money";
 
@@ -96,7 +98,7 @@ function DashboardContent({ dashboard }: { dashboard: DashboardData }) {
             <span>Last updated {new Date(dashboard.generated_at).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", timeZone: "UTC" })} UTC · Current estimates</span>
           </div>
           <section aria-label="Summary metrics" className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-            {cards.map(([label, value, caption]) => <div key={label} className="flex min-h-[130px] flex-col justify-center rounded-lg border bg-card p-5"><p className="text-xs text-muted-foreground">{label}</p><p className="mt-2 text-2xl font-semibold tabular-nums">{value}</p><p className="mt-1 text-xs text-muted-foreground">{caption}</p></div>)}
+            {cards.map(([label, value, caption]) => <SummaryCard key={label} label={label} value={value} caption={caption} />)}
           </section>
           <EarningsChart dashboard={dashboard} />
         </>

@@ -1,4 +1,6 @@
 "use client";
+import { SummaryCard } from "@/components/ui/summary-card";
+
 
 import { formatUsd as formatMicros } from "@/lib/money";
 
@@ -179,25 +181,25 @@ function DashboardContent({ dashboard }: { dashboard: DashboardData }) {
           label="Available balance"
           href="/advertiser/billing"
           value={formatMicros(dashboard.metrics.available_balance_micros)}
-          caption="View funding →"
+          caption="View funding"
         />
         <MetricCard
           label="Active campaigns"
           href="/advertiser/campaigns"
           value={formatNumber(dashboard.metrics.active_campaigns)}
-          caption="View campaigns →"
+          caption="View campaigns"
         />
         <MetricCard
           label="Active creatives"
           href="/advertiser/creatives?status=approved"
           value={formatNumber(dashboard.metrics.active_creatives)}
-          caption="Approved & eligible →"
+          caption="Approved & eligible"
         />
         <MetricCard
           label="Pending creatives"
           href="/advertiser/creatives?status=pending_review"
           value={formatNumber(dashboard.metrics.pending_creatives)}
-          caption="View pending review →"
+          caption="View pending review"
         />
       </section>
 
@@ -255,11 +257,7 @@ function MetricCard({
   href?: string;
 }) {
   return (
-    <div className="rounded-lg bg-card p-6">
-      <p className="text-sm text-muted-foreground">{label}</p>
-      <p className="mt-2 text-3xl font-semibold tracking-normal">{value}</p>
-      <p className="mt-2 text-xs text-muted-foreground">{href ? <Link href={href} className="hover:underline">{caption}</Link> : caption}</p>
-    </div>
+    <SummaryCard label={label} value={value} caption={caption} href={href} />
   );
 }
 

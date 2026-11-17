@@ -1,3 +1,4 @@
+import { SummaryCard } from "@/components/ui/summary-card";
 import Link from "next/link";
 import { ArrowRight, BarChart3, Server, ShieldCheck } from "lucide-react";
 
@@ -49,11 +50,7 @@ export default function Home() {
                 ["Servers", "248", Server],
                 ["Verified", "99.8%", ShieldCheck],
               ].map(([label, value, Icon]) => (
-                <div key={label as string} className="rounded-md border border-border bg-background p-4">
-                  <Icon className="size-5 text-foreground" aria-hidden="true" />
-                  <p className="mt-6 text-2xl font-semibold">{value as string}</p>
-                  <p className="mt-1 text-xs text-muted-foreground">{label as string}</p>
-                </div>
+                <SummaryCard key={label as string} label={label as string} value={value as string} icon={<Icon className="size-4" />} />
               ))}
             </div>
             <div className="space-y-3 rounded-md bg-primary p-4 text-primary-foreground">

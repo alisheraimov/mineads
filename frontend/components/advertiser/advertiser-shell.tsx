@@ -24,6 +24,7 @@ import { User, getCurrentUser, logout, clearToken, adminCan } from "@/lib/auth";
 import { campaignOptions } from "@/lib/campaigns";
 import { formatMicros } from "@/lib/advertiser-format";
 import { cn } from "@/lib/utils";
+import { SidebarIcon, SidebarLink } from "@/components/workspace-navigation";
 
 export function AdvertiserShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -81,11 +82,11 @@ export function AdvertiserShell({ children }: { children: React.ReactNode }) {
       </main>
     );
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="workspace-shell min-h-screen bg-background text-foreground">
       <AdvertiserHeader user={account.user} onLogout={handleLogout} />
       <div className="flex min-h-[calc(100vh-72px)]">
         <AdvertiserSidebar balance={account.balance} />
-        <main className="min-w-0 flex-1 bg-canvas px-5 py-8 sm:px-8 lg:px-10">
+        <main className="workspace-main min-w-0 flex-1 bg-canvas px-5 py-8 sm:px-8 lg:px-10">
           <nav
             aria-label="Workspace"
             className="mb-6 flex flex-wrap gap-4 border-b pb-3 text-sm lg:hidden"
@@ -134,7 +135,7 @@ export function AdvertiserSidebar({ balance, workspace = "advertiser", user }: {
   const pathname = usePathname();
   const isAdmin = workspace === "admin";
   return (
-    <aside className="hidden w-[248px] shrink-0 flex-col border-r border-sidebar-border bg-sidebar px-3 py-4 lg:flex">
+    <aside className="workspace-sidebar hidden w-[248px] shrink-0 flex-col border-r border-sidebar-border bg-sidebar px-3 py-4 lg:flex">
       <div className="rounded-lg p-2">
         <p className="text-sm font-medium text-sidebar-foreground">
           {isAdmin ? "Admin Console" : "Advertiser"}
@@ -197,7 +198,7 @@ export function AdvertiserSidebar({ balance, workspace = "advertiser", user }: {
       {isAdmin ? <div className="space-y-1 rounded-lg border border-border bg-background p-3">
         <p className="text-xs font-medium">{user?.admin_role ? ({"admin-owner":"Owner", "ad-ops":"Ad Operations", finance:"Finance", support:"Support"}[user.admin_role] ?? "Admin") : "Admin"} access</p>
         <p className="text-xs text-muted-foreground">{user?.admin_role === "admin-owner" ? "Manage accounts and admins" : "Access based on assigned role"}</p>
-      </div> : <div className="rounded-lg border border-border bg-background p-3">
+      </div> : <div className="workspace-silver-panel shrink-0 rounded-xl p-4">
         <p className="text-xs text-muted-foreground">Available balance</p>
         <p className="mt-3 text-xl font-semibold">{formatMicros(balance)}</p>
         <Button asChild variant="outline" className="mt-3 w-full">
@@ -214,41 +215,5 @@ export function AdvertiserSidebar({ balance, workspace = "advertiser", user }: {
         />
       </div>
     </aside>
-  );
-}
-
-function SidebarIcon({ icon: Icon, active = false }: {
-  icon: React.ComponentType<{ className?: string; "aria-hidden"?: boolean }>;
-  active?: boolean;
-}) {
-  return <span className={cn(
-    "flex size-6 shrink-0 items-center justify-center rounded-md bg-sidebar-foreground/5 text-sidebar-foreground/70 transition-colors",
-    active && "bg-background text-sidebar-accent-foreground shadow-sm ring-1 ring-sidebar-border/60",
-  )}><Icon className="size-4" aria-hidden={true} /></span>;
-}
-
-function SidebarLink({
-  label,
-  href,
-  icon: Icon,
-  active = false,
-}: {
-  label: string;
-  href: string;
-  icon: React.ComponentType<{ className?: string; "aria-hidden"?: boolean }>;
-  active?: boolean;
-}) {
-  return (
-    <Link
-      href={href}
-      aria-current={active ? "page" : undefined}
-      className={cn(
-        "flex h-9 items-center gap-2 rounded-md px-2 text-sm text-sidebar-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-        active && "bg-sidebar-foreground/[0.06] text-sidebar-accent-foreground hover:bg-sidebar-foreground/[0.06] dark:bg-sidebar-foreground/10 dark:hover:bg-sidebar-foreground/10",
-      )}
-    >
-      <SidebarIcon icon={Icon} active={active} />
-      <span className="truncate">{label}</span>
-    </Link>
   );
 }

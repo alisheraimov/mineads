@@ -1,4 +1,6 @@
 "use client";
+import { SummaryCard } from "@/components/ui/summary-card";
+
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
@@ -142,13 +144,7 @@ export function BillingPage() {
                 `${formatNumber(data.metrics.impressions_month)} validated impressions`,
               ],
             ].map(([label, value, caption]) => (
-              <div key={label} className="min-w-0 rounded-lg bg-card p-5">
-                <p className="text-sm text-muted-foreground">{label}</p>
-                <p className="mt-3 break-words text-2xl font-semibold tabular-nums">
-                  {value}
-                </p>
-                <p className="mt-2 text-xs text-muted-foreground">{caption}</p>
-              </div>
+              <SummaryCard key={label} label={label} value={value} caption={caption} />
             ))}
           </section>
           <section className="min-w-0 space-y-4" aria-busy={loading}>

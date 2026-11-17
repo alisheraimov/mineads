@@ -1,4 +1,6 @@
 "use client";
+import { SummaryCard } from "@/components/ui/summary-card";
+
 
 import Link from "next/link";
 import { useRouter } from "@/lib/navigation";
@@ -45,6 +47,6 @@ export function UnavailablePluginLinks() {
   return <div className="flex flex-wrap gap-2"><Button disabled title="Plugin download will be available later">Download plugin</Button><Button variant="outline" disabled title="Setup guide will be available later">Setup guide</Button></div>;
 }
 export function ServerMetric({ label, value, caption }: { label: string; value: string | number; caption: string }) {
-  return <div className="rounded-lg border bg-card p-5"><p className="text-xs text-muted-foreground">{label}</p><p className="mt-2 text-2xl font-semibold tabular-nums">{value}</p><p className="mt-2 text-xs text-muted-foreground">{caption}</p></div>;
+  return <SummaryCard label={label} value={value} caption={caption} />;
 }
 export const panelClass = "rounded-lg border bg-card p-6";

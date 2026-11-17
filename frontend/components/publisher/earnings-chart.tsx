@@ -27,9 +27,9 @@ export function EarningsChart({ dashboard }: { dashboard: PublisherDashboard }) 
         </div>
         <div role="group" aria-label="Chart metric" className="grid grid-cols-2 border-t sm:border-t-0">
           {(["earnings", "impressions"] as const).map((item) => (
-            <button key={item} type="button" aria-pressed={metric === item} onClick={() => setMetric(item)} className={cn("min-w-0 border-l px-6 py-5 text-left focus-visible:outline-2 focus-visible:-outline-offset-4 focus-visible:outline-ring sm:min-w-40", metric === item && "bg-foreground text-background")}>
-              <span className={cn("block text-xs", metric === item ? "text-background/80" : "text-muted-foreground")}>{item === "earnings" ? "Earnings" : "Impressions"}</span>
-              <span className="mt-1 block text-2xl font-semibold tabular-nums">{totals[item]}</span>
+            <button key={item} type="button" aria-pressed={metric === item} onClick={() => setMetric(item)} className={cn("summary-metric min-w-0 border-l px-6 py-5 text-left focus-visible:outline-2 focus-visible:-outline-offset-4 focus-visible:outline-ring sm:min-w-40", metric === item && "bg-foreground text-background")}>
+              <span className="summary-label block">{item === "earnings" ? "Earnings" : "Impressions"}</span>
+              <span className="summary-value mt-3">{totals[item]}</span>
             </button>
           ))}
         </div>

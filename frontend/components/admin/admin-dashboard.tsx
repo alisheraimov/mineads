@@ -1,11 +1,13 @@
 "use client";
+import { SummaryCard } from "@/components/ui/summary-card";
+
 
 import { formatUsd as money } from "@/lib/money";
 
 import { useCallback, useEffect, useId, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "@/lib/navigation";
-import { ArrowLeft, ArrowRight, CalendarDays, ChevronRight, Info, Loader2, RefreshCw, ShieldCheck } from "lucide-react";
+import { ArrowLeft, CalendarDays, ChevronRight, Info, Loader2, RefreshCw, ShieldCheck } from "lucide-react";
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import { AccountHeader } from "@/components/account/account-header";
 import { AdvertiserSidebar } from "@/components/advertiser/advertiser-shell";
@@ -139,11 +141,11 @@ export function AdminDashboard() {
     );
   }
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="workspace-shell min-h-screen bg-background text-foreground">
       <AccountHeader user={user} onLogout={() => { void handleLogout(); }} />
       <div className="flex min-h-[calc(100vh-72px)]">
         <AdvertiserSidebar balance={0} workspace="admin" user={user} onComingSoon={setComingSoon} />
-        <main className="min-w-0 flex-1 bg-canvas px-5 py-8 sm:px-8 lg:px-10">
+        <main className="workspace-main min-w-0 flex-1 bg-canvas px-5 py-8 sm:px-8 lg:px-10">
           <div className="mx-auto flex max-w-[1112px] flex-col gap-6">
             <nav aria-label="Breadcrumb" className="flex items-center gap-2 text-sm text-muted-foreground">
               <span>Admin</span><ChevronRight className="size-3.5" aria-hidden="true" /><span aria-current="page" className="text-foreground">Overview</span>
@@ -166,7 +168,7 @@ export function AdminDashboard() {
                 {snapshot.error && <SectionError message={snapshot.error} stale={!!s} onRetry={snapshot.refresh} />}
                 {s ? <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
                   <Metric label="Active campaigns" value={number(s.active_campaigns)} caption="Currently active campaigns" />
-                  <Metric label="Pending creative reviews" value={number(s.pending_creatives)} caption="Open review queue" onClick={adminCan(user, "admin.creatives.view") || adminCan(user, "admin.creatives.review") ? () => router.push("/admin/creatives") : undefined} />
+                  <Metric label="Pending creative reviews" value={number(s.pending_creatives)} caption="Open review queue" href={adminCan(user, "admin.creatives.view") || adminCan(user, "admin.creatives.review") ? "/admin/creatives" : undefined} />
                   <Metric label="Active publisher servers" value={number(s.active_servers)} caption="Enabled to serve ads" />
                   <Metric label="Online servers" blinkingDot value={number(s.online_servers) + " / " + number(s.active_servers)} caption={"Active · heartbeat within " + s.health_rules.heartbeat_timeout_seconds / 60 + " min"} />
                 </div> : !snapshot.error && <MetricSkeleton count={4} />}
@@ -212,9 +214,9 @@ export function AdminDashboard() {
               <section aria-labelledby="attention-heading" className="space-y-4">
                 <div className="flex flex-wrap items-center justify-between gap-2"><h2 id="attention-heading" className="text-base font-semibold">Needs attention</h2><p className="text-xs text-muted-foreground">Current queues · independent of selected dates</p></div>
                 {s ? <div className="grid gap-4 xl:grid-cols-3">
-                  <Attention title="Creative reviews" value={s.pending_creatives ? number(s.pending_creatives) + " pending" : "All caught up"} detail={s.oldest_pending_creative_at ? "Oldest submission · " + date(s.oldest_pending_creative_at) + " at " + time(s.oldest_pending_creative_at) + " UTC" : "No creatives awaiting review"} action="Review creatives" onClick={adminCan(user, "admin.creatives.view") || adminCan(user, "admin.creatives.review") ? () => router.push("/admin/creatives") : undefined} />
-                  <Attention title="Unhealthy servers" value={s.unhealthy_servers ? number(s.unhealthy_servers) + " servers" : "All healthy"} detail={s.offline_servers + " offline · " + s.high_invalid_rate_servers + " high invalid rate · counts may overlap"} action="Inspect servers" onClick={adminCan(user, "admin.servers.view") ? () => router.push("/admin/servers") : undefined} />
-                  {adminCan(user, "admin.finance.view") && <Attention title="Pending payouts" value={s.pending_payouts ? number(s.pending_payouts) + " pending" : "All caught up"} detail={s.pending_payouts ? money(s.pending_payout_micros) + " awaiting processing" : "No payouts awaiting processing"} action="View payouts" onClick={() => router.push("/admin/finance/payouts?status=pending")} />}
+                  <Attention title="Creative reviews" value={s.pending_creatives ? number(s.pending_creatives) + " pending" : "All caught up"} detail={s.oldest_pending_creative_at ? "Oldest submission · " + date(s.oldest_pending_creative_at) + " at " + time(s.oldest_pending_creative_at) + " UTC" : "No creatives awaiting review"} action="Review creatives" href={adminCan(user, "admin.creatives.view") || adminCan(user, "admin.creatives.review") ? "/admin/creatives" : undefined} />
+                  <Attention title="Unhealthy servers" value={s.unhealthy_servers ? number(s.unhealthy_servers) + " servers" : "All healthy"} detail={s.offline_servers + " offline · " + s.high_invalid_rate_servers + " high invalid rate · counts may overlap"} action="Inspect servers" href={adminCan(user, "admin.servers.view") ? "/admin/servers" : undefined} />
+                  {adminCan(user, "admin.finance.view") && <Attention title="Pending payouts" value={s.pending_payouts ? number(s.pending_payouts) + " pending" : "All caught up"} detail={s.pending_payouts ? money(s.pending_payout_micros) + " awaiting processing" : "No payouts awaiting processing"} action="View payouts" href="/admin/finance/payouts?status=pending" />}
                 </div> : snapshot.error ? <p className="text-sm text-muted-foreground">Queues are unavailable until the marketplace snapshot loads.</p> : <MetricSkeleton count={3} />}
                 {s && <details className="text-xs text-muted-foreground"><summary className="w-fit cursor-pointer">Server health rules</summary><p className="mt-2 max-w-3xl leading-5">An active server is offline without a heartbeat in the last {s.health_rules.heartbeat_timeout_seconds / 60} minutes. It is also unhealthy when more than {s.health_rules.invalid_rate_percent}% of at least {s.health_rules.minimum_processed_impressions} processed impressions are invalid over the last 24 hours. A server matching both conditions is counted once.</p></details>}
               </section>
@@ -243,18 +245,16 @@ function SectionError({ message, stale, onRetry }: { message: string; stale?: bo
   return <div role="alert" className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-destructive/30 bg-card p-4 text-sm"><p>{stale ? "Showing previously loaded data. " : ""}{message}</p><Button variant="outline" size="sm" onClick={onRetry}>Retry</Button></div>;
 }
 
-function Metric({ label, value, caption, onClick, blinkingDot = false }: { label: string; value: string; caption: string; onClick?: () => void; blinkingDot?: boolean }) {
-  const content = <><p className="flex items-center gap-2 text-sm text-muted-foreground">{blinkingDot && <span aria-hidden="true" className="size-2 shrink-0 rounded-full bg-emerald-500 motion-safe:animate-pulse" />}{label}</p><p className="mt-2 text-[28px] font-semibold leading-9 tabular-nums">{value}</p><p className="mt-1 flex items-center gap-1 text-xs leading-5 text-muted-foreground">{caption}{onClick && <ArrowRight className="size-3" aria-hidden="true" />}</p></>;
-  const classes = "min-h-[122px] rounded-lg border border-border bg-card p-5 text-left";
-  return onClick ? <button className={cn(classes, "transition-colors hover:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring")} onClick={onClick}>{content}</button> : <div className={classes}>{content}</div>;
+function Metric({ label, value, caption, href, blinkingDot = false }: { label: string; value: string; caption: string; href?: string; blinkingDot?: boolean }) {
+  return <SummaryCard label={label} value={value} caption={caption} href={href} indicator={blinkingDot ? <span aria-hidden="true" className="mt-1.5 size-2 shrink-0 rounded-full bg-emerald-500" /> : undefined} />;
 }
 
 function MetricSkeleton({ count }: { count: number }) {
-  return <div role="status" aria-label="Loading metrics" className={cn("grid gap-4 sm:grid-cols-2", count === 4 ? "xl:grid-cols-4" : "xl:grid-cols-3")}>{Array.from({ length: count }, (_, i) => <div key={i} className="h-[132px] animate-pulse rounded-lg border bg-muted" />)}</div>;
+  return <div role="status" aria-label="Loading metrics" className={cn("grid gap-4 sm:grid-cols-2", count === 4 ? "xl:grid-cols-4" : "xl:grid-cols-3")}>{Array.from({ length: count }, (_, i) => <div key={i} className="summary-card animate-pulse" />)}</div>;
 }
 
-function Attention({ title, value, detail, action, onClick }: { title: string; value: string; detail: string; action: string; onClick?: () => void }) {
-  return <div className="flex flex-col rounded-lg border bg-card p-5"><h3 className="text-sm font-medium">{title}</h3><p className="mt-3 text-2xl font-semibold tabular-nums">{value}</p><p className="mb-3 mt-2 text-xs leading-5 text-muted-foreground">{detail}</p>{onClick && <Button variant="link" className="mt-auto h-auto justify-start self-start p-0 text-xs" onClick={onClick}>{action}<ArrowRight className="size-3" aria-hidden="true" /></Button>}</div>;
+function Attention({ title, value, detail, href }: { title: string; value: string; detail: string; action: string; href?: string }) {
+  return <SummaryCard label={title} value={value} caption={detail} href={href} />;
 }
 
 function PerformanceChart({ performance, canViewFinance }: { performance: AdminPerformance; canViewFinance: boolean }) {

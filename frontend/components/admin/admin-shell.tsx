@@ -35,11 +35,11 @@ export function AdminShell({ children, requiredPermission = "admin.users.view" }
   }, [router, requiredPermission]);
   if (!user) return <main className="grid min-h-screen place-items-center"><Loader2 className="size-5 animate-spin" aria-label="Verifying access" /></main>;
   return <AdminContext.Provider value={user}>
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="workspace-shell min-h-screen bg-background text-foreground">
       <AccountHeader user={user} onLogout={() => { void logout().finally(() => { clearToken(); setUser(null); router.replace("/login"); }).catch(() => {}); }} />
       <div className="flex min-h-[calc(100vh-72px)]">
         <AdvertiserSidebar balance={0} workspace="admin" user={user} onComingSoon={setComingSoon} />
-        <main className="min-w-0 flex-1 bg-canvas px-5 py-8 sm:px-8 lg:px-10">
+        <main className="workspace-main min-w-0 flex-1 bg-canvas px-5 py-8 sm:px-8 lg:px-10">
           <div className="mx-auto max-w-[1112px]">
             <nav className="mb-6 flex gap-4 border-b pb-3 text-sm lg:hidden" aria-label="Admin navigation">
               {adminCan(user, "admin.analytics.view") && <Link href="/admin">Overview</Link>}

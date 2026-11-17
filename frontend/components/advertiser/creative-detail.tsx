@@ -322,14 +322,14 @@ export function CreativeDetailsPage({ id }: { id: string }) {
                     aria-pressed={metric === key}
                     onClick={() => setMetric(key)}
                     className={cn(
-                      "min-w-0 border-t p-5 text-left hover:bg-muted/50 focus-visible:outline-2 focus-visible:outline-ring sm:border-l sm:border-t-0",
+                      "summary-metric min-w-0 border-t p-5 text-left hover:bg-muted/50 focus-visible:outline-2 focus-visible:outline-ring sm:border-l sm:border-t-0",
                       metric === key && "bg-muted/50",
                     )}
                   >
-                    <span className="block text-xs text-muted-foreground">
+                    <span className="summary-label block">
                       {metricLabels[key]}
                     </span>
-                    <span className="mt-1 block break-words text-2xl font-semibold">
+                    <span className="summary-value mt-3">
                       {key === "impressions"
                         ? formatNumber(data.metrics.impressions)
                         : formatMicros(
