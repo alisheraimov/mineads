@@ -266,7 +266,7 @@ function PerformanceChart({ performance, canViewFinance }: { performance: AdminP
   return <Tabs value={metric} onValueChange={setMetric} className="mt-6 gap-0 overflow-hidden rounded-lg border bg-card">
     <div className="flex flex-wrap items-center justify-between gap-4 px-6 pt-6">
       <div><h3 className="text-base font-semibold">Performance over time</h3><p className="mt-1 text-xs text-muted-foreground">{monetary ? "Amount in USD" : "Impressions"} by {performance.period.interval} · UTC</p></div>
-      <TabsList aria-label="Chart metric" className="h-auto max-w-full flex-wrap">
+      <TabsList aria-label="Chart metric">
         <TabsTrigger value="impressions">Impressions</TabsTrigger>{canViewFinance && <><TabsTrigger value="spend_micros">Spend</TabsTrigger><TabsTrigger value="earnings_micros">Earnings</TabsTrigger><TabsTrigger value="fee_micros">Platform fee</TabsTrigger></>}
       </TabsList>
     </div>

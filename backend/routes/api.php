@@ -12,6 +12,7 @@ use App\Http\Controllers\Advertiser\CampaignController;
 use App\Http\Controllers\Advertiser\CreativeController;
 use App\Http\Controllers\Advertiser\DashboardController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\AvatarController;
 use App\Http\Controllers\GoogleAuthController;
 use App\Http\Controllers\PluginApiController;
 use App\Http\Controllers\Publisher\DashboardController as PublisherDashboardController;
@@ -80,6 +81,8 @@ Route::prefix('auth')->group(function () {
     Route::middleware(['auth:sanctum', 'active'])->group(function () {
         Route::get('/me', [AuthController::class, 'me']);
         Route::patch('/profile', [AuthController::class, 'updateProfile']);
+        Route::post('/avatar', [AvatarController::class, 'store'])->middleware('throttle:10,1');
+        Route::delete('/avatar', [AvatarController::class, 'destroy'])->middleware('throttle:10,1');
         Route::put('/password', [AuthController::class, 'updatePassword'])->middleware('throttle:6,1');
         Route::post('/logout', [AuthController::class, 'logout']);
         Route::post('/email/verification-notification', [AuthController::class, 'sendVerificationEmail'])

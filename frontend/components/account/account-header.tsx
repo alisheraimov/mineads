@@ -101,6 +101,11 @@ export function AccountHeader({
               >
                 {user.email}
               </p>
+              {user.role === null && (
+                <Button asChild variant="ghost" className="h-9 justify-start">
+                  <Link href="/choose-path"><LayoutDashboard aria-hidden="true" />Choose account type</Link>
+                </Button>
+              )}
               {user.role === "admin" && (
                 <Button asChild variant="ghost" className="h-9 justify-start">
                   <Link href={adminHome(user)}><LayoutDashboard aria-hidden="true" />Admin Console</Link>

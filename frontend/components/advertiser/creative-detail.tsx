@@ -242,7 +242,7 @@ export function CreativeDetailsPage({ id }: { id: string }) {
                 else setRange(dateRange(value));
               }}
             >
-              <TabsList className="h-auto flex-wrap">
+              <TabsList>
                 {[
                   ["today", "Today"],
                   ["yesterday", "Yesterday"],

@@ -252,10 +252,6 @@ a {
   box-shadow: inset 0 1px 2px rgb(0 0 0 / 0.025);
 }
 
-.workspace-main [data-slot="tabs-list"] {
-  box-shadow: inset 0 1px 3px rgb(0 0 0 / 0.04);
-}
-
 .workspace-silver-panel {
   background: var(--workspace-silver);
   border: 1px solid color-mix(in oklch, var(--foreground) 14%, var(--card));

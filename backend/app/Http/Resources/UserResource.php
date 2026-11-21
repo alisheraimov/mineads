@@ -4,6 +4,7 @@ namespace App\Http\Resources;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Facades\Storage;
 
 class UserResource extends JsonResource
 {
@@ -21,7 +22,8 @@ class UserResource extends JsonResource
             'role' => $this->role,
             'admin_role' => $this->role === 'admin' ? $this->roles->pluck('name')->first() : null,
             'status' => $this->status,
-            'avatar_url' => $this->avatar_url,
+            'avatar_url' => $this->avatar_path ? Storage::disk('public')->url($this->avatar_path) : $this->avatar_url,
+            'has_uploaded_avatar' => $this->avatar_path !== null,
             'email_verified_at' => $this->email_verified_at,
             'google_connected' => $this->google_id !== null,
             'permissions' => $this->role === 'admin'

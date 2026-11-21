@@ -275,7 +275,7 @@ export function CampaignDetailsPage({ id }: { id: string }) {
                 else setDraftRange(range);
               }}
             >
-              <TabsList className="flex h-auto flex-wrap">
+              <TabsList>
                 {[
                   ["today", "Today"],
                   ["yesterday", "Yesterday"],

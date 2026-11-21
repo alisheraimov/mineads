@@ -12,9 +12,10 @@ export type User = {
   id: number;
   name: string;
   email: string;
-  role: UserRole;
+  role: UserRole | null;
   status: AccountStatus;
   avatar_url: string | null;
+  has_uploaded_avatar: boolean;
   email_verified_at: string | null;
   google_connected: boolean;
   permissions: string[];
@@ -99,6 +100,16 @@ export async function updateProfile(name: string) {
   });
 }
 
+export function uploadAvatar(file: File) {
+  const body = new FormData();
+  body.append("avatar", file);
+  return apiRequest<{ data: User }>("/auth/avatar", { method: "POST", token: getToken(), body });
+}
+
+export function removeAvatar() {
+  return apiRequest<{ data: User }>("/auth/avatar", { method: "DELETE", token: getToken() });
+}
+
 export async function updatePassword(payload: {
   current_password: string;
   password: string;
@@ -178,7 +189,7 @@ export async function apiRequest<T>(path: string, options: ApiOptions = {}): Pro
   const headers = new Headers(options.headers);
   headers.set("Accept", "application/json");
 
-  if (options.body) {
+  if (options.body && !(options.body instanceof FormData)) {
     headers.set("Content-Type", "application/json");
   }
 

@@ -4,6 +4,7 @@ import { FormEvent, useEffect, useState } from "react";
 import { CartesianGrid, Line, LineChart, XAxis, YAxis } from "recharts";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DatePicker } from "@/components/ui/date-picker";
 import { ServerPerformance, serverPerformance } from "@/lib/servers";
 import { money, panelClass } from "@/components/publisher/server-shared";
@@ -40,8 +41,8 @@ export function ServerPerformancePanel({ id }: { id: number }) {
       <Button type="submit" variant="outline" disabled={loading}>Apply dates</Button>
     </form>
     <div className="my-5 flex flex-wrap items-center justify-between gap-4">
-      <div role="group" aria-label="Performance metric" className="flex gap-1">{([["earnings_micros", "Earnings"], ["impressions", "Impressions"], ["effective_cpm_micros", "CPM"]] as const).map(([value, label]) => <Button key={value} size="sm" variant={metric === value ? "default" : "ghost"} aria-pressed={metric === value} onClick={() => setMetric(value)}>{label}</Button>)}</div>
-      <div className="flex flex-wrap items-center gap-3"><div role="group" aria-label="Chart grouping" className="flex gap-1">{["day", "week", "month"].map((value) => <Button key={value} size="sm" variant={group === value ? "default" : "ghost"} aria-pressed={group === value} onClick={() => { setGroup(value); setQuery((current) => ({ ...current, group: value })); }}>{value.charAt(0).toUpperCase() + value.slice(1)}</Button>)}</div><label className="flex items-center gap-2 text-xs"><input type="checkbox" checked={compare} onChange={(event) => { setCompare(event.target.checked); setQuery((current) => ({ ...current, compare: event.target.checked ? "1" : "0" })); }} />Compare previous period</label></div>
+      <Tabs value={metric} onValueChange={value => setMetric(value as typeof metric)}><TabsList aria-label="Performance metric">{([["earnings_micros", "Earnings"], ["impressions", "Impressions"], ["effective_cpm_micros", "CPM"]] as const).map(([value, label]) => <TabsTrigger key={value} value={value}>{label}</TabsTrigger>)}</TabsList></Tabs>
+      <div className="flex flex-wrap items-center gap-3"><Tabs value={group} onValueChange={value => { setGroup(value); setQuery(current => ({ ...current, group: value })); }}><TabsList aria-label="Chart grouping">{["day", "week", "month"].map(value => <TabsTrigger key={value} value={value}>{value.charAt(0).toUpperCase() + value.slice(1)}</TabsTrigger>)}</TabsList></Tabs><label className="flex items-center gap-2 text-xs"><input type="checkbox" checked={compare} onChange={(event) => { setCompare(event.target.checked); setQuery((current) => ({ ...current, compare: event.target.checked ? "1" : "0" })); }} />Compare previous period</label></div>
     </div>
     {error && <p role="alert" className="my-3 text-sm text-destructive">{error}</p>}
     {loading && <p role="status" className="mb-3 text-xs text-muted-foreground">Loading performance…</p>}

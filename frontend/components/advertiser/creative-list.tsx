@@ -100,7 +100,7 @@ export function CreativesListPage() {
           </Button>
         </form>
         <Tabs value={status} onValueChange={(value) => update("status", value)}>
-          <TabsList className="h-auto flex-wrap">
+          <TabsList>
             {[
               ["all", "All"],
               ["approved", "Approved"],

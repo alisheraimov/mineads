@@ -107,7 +107,7 @@ export function CampaignListPage() {
             setPage(1);
           }}
         >
-          <TabsList className="flex h-auto flex-wrap">
+          <TabsList>
             <TabsTrigger value="all">
               All campaigns · {data?.counts.all ?? 0}
             </TabsTrigger>

@@ -6,6 +6,7 @@ import { FormEvent, ReactNode, useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
 
 import { AccountHeader } from "@/components/account/account-header";
+import { ProfilePicture } from "@/components/account/profile-picture";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -38,6 +39,7 @@ export function AccountPanel() {
   const [securityFeedback, setSecurityFeedback] = useState<Feedback>({});
   const [emailFeedback, setEmailFeedback] = useState<Feedback>({});
   const [savingProfile, setSavingProfile] = useState(false);
+  const [savingAvatar, setSavingAvatar] = useState(false);
   const [savingPassword, setSavingPassword] = useState(false);
   const [sendingEmail, setSendingEmail] = useState(false);
   const [currentPassword, setCurrentPassword] = useState("");
@@ -101,7 +103,7 @@ export function AccountPanel() {
 
   async function saveProfile(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (savingProfile) return;
+    if (savingProfile || savingAvatar) return;
     setSavingProfile(true);
     setProfileFeedback({});
     try {
@@ -208,6 +210,7 @@ export function AccountPanel() {
           description="Your personal details and the email you use to sign in."
         >
           <form onSubmit={saveProfile} className="space-y-6">
+            <ProfilePicture user={user} disabled={savingProfile} onSaved={setUser} onBusyChange={setSavingAvatar} getError={error => failure(error).error ?? "Unable to update your profile picture."} />
             <div className="space-y-2">
               <Label htmlFor="display-name">Display name</Label>
               <Input
@@ -271,7 +274,7 @@ export function AccountPanel() {
                 type="submit"
                 className="h-9 w-full px-4 sm:w-auto"
                 disabled={
-                  savingProfile || !name.trim() || name.trim() === user.name
+                  savingProfile || savingAvatar || !name.trim() || name.trim() === user.name
                 }
               >
                 {savingProfile && (

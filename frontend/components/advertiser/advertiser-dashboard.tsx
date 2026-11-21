@@ -169,7 +169,7 @@ function DashboardContent({ dashboard }: { dashboard: DashboardData }) {
       <section className="flex flex-col gap-3 text-sm sm:flex-row sm:items-center sm:justify-between">
         <div className="flex flex-wrap items-center gap-3">
           <span className="font-medium">
-            {dashboard.account.name} · Advertiser account
+            Advertiser account
           </span>
           <StatusBadge status={dashboard.account.status} />
         </div>

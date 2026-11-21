@@ -6,6 +6,7 @@ import { FormEvent, useState } from "react";
 import { Loader2 } from "lucide-react";
 
 import { AuthDivider, AuthError, AuthField, AuthForm, AuthIntro, AuthSubmit, GoogleMark } from "@/components/auth/auth-shell";
+import { PasswordInput } from "@/components/auth/password-input";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -64,9 +65,8 @@ export function RegisterForm() {
         </AuthField>
         <AuthField>
           <Label htmlFor="password">Password</Label>
-          <Input
+          <PasswordInput
             id="password"
-            type="password"
             autoComplete="new-password"
             minLength={8}
             placeholder="Create a password"

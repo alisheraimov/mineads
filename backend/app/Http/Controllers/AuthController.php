@@ -30,7 +30,7 @@ class AuthController extends Controller
             'name' => $data['name'] ?? Str::before($data['email'], '@'),
             'email' => $data['email'],
             'password' => $data['password'],
-            'role' => 'advertiser',
+            'role' => null,
             'status' => 'active',
         ]);
 
@@ -221,8 +221,10 @@ class AuthController extends Controller
             ], 422);
         }
 
-        $user->forceFill(['role' => $data['role']])->save();
-        $this->createCommercialAccount($user, $data['role']);
+        DB::transaction(function () use ($user, $data): void {
+            $user->forceFill(['role' => $data['role']])->save();
+            $this->createCommercialAccount($user, $data['role']);
+        });
 
         return response()->json([
             'user' => UserResource::make($user->fresh(['advertiserAccount', 'publisherAccount'])),

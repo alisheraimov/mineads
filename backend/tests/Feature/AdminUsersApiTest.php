@@ -208,7 +208,7 @@ class AdminUsersApiTest extends TestCase
     public function test_commercial_users_cannot_be_promoted_and_admins_cannot_onboard_as_commercial_users(): void
     {
         $owner = $this->admin();
-        $user = User::factory()->create();
+        $user = User::factory()->create(['role' => 'advertiser']);
 
         $this->actingAs($owner, 'sanctum')->patchJson('/api/admin/users/'.$user->id.'/role', ['admin_role' => 'support'])->assertUnprocessable();
         $this->postJson('/api/auth/onboarding', ['role' => 'advertiser'])->assertForbidden();

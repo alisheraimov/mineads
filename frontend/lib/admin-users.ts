@@ -2,7 +2,7 @@ import { apiRequest, getToken } from "@/lib/auth";
 
 export type AdminRole = { value: string; label: string; description: string; permissions: string[] };
 export type AdminUser = {
-  id: number; name: string; email: string; role: "admin" | "advertiser" | "publisher";
+  id: number; name: string; email: string; role: "admin" | "advertiser" | "publisher" | null;
   admin_role: string | null; status: "active" | "suspended" | "deleted";
   created_at: string; email_verified_at: string | null; deleted_at: string | null;
   suspension_reason: string | null; suspended_at: string | null;
@@ -34,7 +34,7 @@ export function changeAdminUser(id: number, action: "suspend" | "reactivate" | "
   });
 }
 export const adminRoleLabels: Record<string, string> = { "admin-owner": "Owner", "ad-ops": "Ad Operations", finance: "Finance", support: "Support" };
-export const roleLabel = (role: string) => role.charAt(0).toUpperCase() + role.slice(1);
+export const roleLabel = (role: string | null) => role ? role.charAt(0).toUpperCase() + role.slice(1) : "Not selected";
 export const userDate = (date: string) => new Date(date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" });
 export const userDateTime = (date: string) => userDate(date) + " · " + new Date(date).toLocaleTimeString("en-GB", {hour:"2-digit", minute:"2-digit", timeZone:"UTC"}) + " UTC";
 
