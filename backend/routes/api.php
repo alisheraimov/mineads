@@ -14,7 +14,6 @@ use App\Http\Controllers\Advertiser\DashboardController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\AvatarController;
 use App\Http\Controllers\GoogleAuthController;
-use App\Http\Controllers\PluginApiController;
 use App\Http\Controllers\Publisher\DashboardController as PublisherDashboardController;
 use App\Http\Controllers\Publisher\PayoutController as PublisherPayoutController;
 use App\Http\Controllers\Publisher\ServerController as PublisherServerController;
@@ -89,13 +88,6 @@ Route::prefix('auth')->group(function () {
             ->middleware('throttle:6,1');
         Route::post('/onboarding', [AuthController::class, 'completeOnboarding']);
     });
-});
-
-Route::prefix('plugin/v1')->group(function () {
-    Route::post('/activate', [PluginApiController::class, 'activate']);
-    Route::post('/heartbeat', [PluginApiController::class, 'heartbeat']);
-    Route::post('/ads/request', [PluginApiController::class, 'requestAds']);
-    Route::post('/impressions', [PluginApiController::class, 'impressions']);
 });
 
 Route::prefix('advertiser')
