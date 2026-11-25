@@ -15,19 +15,19 @@ import { googleRedirectUrl, register, setToken } from "@/lib/auth";
 
 export function RegisterForm() {
   const router = useRouter();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    const password = String(form.get("password") ?? "");
     setError("");
     setIsSubmitting(true);
 
     try {
       const response = await register({
-        email,
+        email: String(form.get("email") ?? ""),
         password,
         password_confirmation: password,
       });
@@ -55,11 +55,10 @@ export function RegisterForm() {
           <Label htmlFor="email">Email</Label>
           <Input
             id="email"
+            name="email"
             type="email"
             autoComplete="email"
             placeholder="you@example.com"
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
             required
           />
         </AuthField>
@@ -67,11 +66,10 @@ export function RegisterForm() {
           <Label htmlFor="password">Password</Label>
           <PasswordInput
             id="password"
+            name="password"
             autoComplete="new-password"
             minLength={8}
             placeholder="Create a password"
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
             required
           />
         </AuthField>

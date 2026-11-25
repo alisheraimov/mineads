@@ -1,13 +1,15 @@
 "use client";
 
+import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useRouter } from "@/lib/navigation";
 import { useEffect, useState } from "react";
-import { Loader2 } from "lucide-react";
+import { Loader2, MailCheck } from "lucide-react";
 import { cn } from "cn";
 
 import { AuthError, AuthIntro } from "@/components/auth/auth-shell";
 import { PrimaryButton } from "@/components/ui/primary-button";
-import { adminHome, completeOnboarding, getCurrentUser } from "@/lib/auth";
+import { adminHome, ApiError, completeOnboarding, getCurrentUser } from "@/lib/auth";
 
 type Path = "advertiser" | "publisher";
 
@@ -28,13 +30,20 @@ const paths: Record<Path, { title: string; role: string; description: string; ac
 
 export function ChoosePathPanel() {
   const router = useRouter();
+  const fromVerification = useSearchParams().get("verified") === "1";
+  const [session, setSession] = useState<"checking" | "ready" | "sign-in" | "error">("checking");
+  const [sessionAttempt, setSessionAttempt] = useState(0);
   const [selectedPath, setSelectedPath] = useState<Path>("advertiser");
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
+    let active = true;
+
     getCurrentUser()
       .then(({ data }) => {
+        if (!active) return;
+
         if (!data.email_verified_at) {
           router.replace(`/verify-email?email=${encodeURIComponent(data.email)}`);
         } else if (data.role === "admin") {
@@ -43,12 +52,30 @@ export function ChoosePathPanel() {
           router.replace("/account-ready?role=advertiser");
         } else if (data.publisher_account) {
           router.replace("/account-ready?role=publisher");
+        } else {
+          setSession("ready");
         }
       })
-      .catch(() => {
-        router.replace("/login");
+      .catch((err) => {
+        if (!active) return;
+
+        if (err instanceof ApiError && err.status === 401) {
+          if (fromVerification) {
+            setSession("sign-in");
+          } else {
+            router.replace("/login");
+          }
+        } else if (err instanceof ApiError && err.status === 403) {
+          router.replace("/account-suspended");
+        } else {
+          setSession("error");
+        }
       });
-  }, [router]);
+
+    return () => {
+      active = false;
+    };
+  }, [fromVerification, router, sessionAttempt]);
 
   async function handleSubmit() {
     setError("");
@@ -62,6 +89,42 @@ export function ChoosePathPanel() {
     } finally {
       setIsSubmitting(false);
     }
+  }
+
+  if (session === "checking") {
+    return <p role="status" className="text-sm text-muted-foreground">Checking your session…</p>;
+  }
+
+  if (session === "sign-in") {
+    return (
+      <div className="flex w-full max-w-[360px] flex-col gap-6">
+        <AuthIntro
+          icon={<MailCheck className="size-6" aria-hidden="true" />}
+          title="Email verified"
+          description="Sign in with the email and password you used to sign up."
+        />
+        <PrimaryButton asChild className="h-10 w-full">
+          <Link href="/login">Sign in to continue</Link>
+        </PrimaryButton>
+      </div>
+    );
+  }
+
+  if (session === "error") {
+    return (
+      <div className="flex w-full max-w-[360px] flex-col gap-6">
+        <AuthIntro title="Couldn’t check your session" description="Try again to continue setting up your account." />
+        <PrimaryButton
+          className="h-10 w-full"
+          onClick={() => {
+            setSession("checking");
+            setSessionAttempt((attempt) => attempt + 1);
+          }}
+        >
+          Try again
+        </PrimaryButton>
+      </div>
+    );
   }
 
   return (

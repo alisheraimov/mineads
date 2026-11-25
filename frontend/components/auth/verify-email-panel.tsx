@@ -49,6 +49,9 @@ export function VerifyEmailPanel() {
         {isSubmitting ? <Loader2 className="animate-spin" aria-hidden="true" /> : null}
         Resend verification email
       </PrimaryButton>
+      <Link className="text-center text-sm font-medium leading-5" href="/choose-path">
+        Continue after verifying
+      </Link>
       <div className="space-y-2 text-center text-sm leading-5 text-muted-foreground">
         <p>No email yet? Check your spam folder.</p>
         <p>

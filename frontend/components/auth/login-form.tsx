@@ -12,36 +12,37 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PrimaryButton } from "@/components/ui/primary-button";
-import { adminHome, getCurrentUser, googleRedirectUrl, login, setToken } from "@/lib/auth";
+import { adminHome, googleRedirectUrl, login, setToken } from "@/lib/auth";
 
 export function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [error, setError] = useState(searchParams.get("error") === "suspended" ? "This account has been suspended." : "");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    const form = new FormData(event.currentTarget);
     setError("");
     setIsSubmitting(true);
 
     try {
-      const response = await login({ email, password });
-      setToken(response.token);
-      const currentUser = await getCurrentUser();
+      const { token, user } = await login({
+        email: String(form.get("email") ?? ""),
+        password: String(form.get("password") ?? ""),
+      });
+      setToken(token);
 
-      if (currentUser.data.status === "suspended") {
+      if (user.status === "suspended") {
         router.push("/account-suspended");
-      } else if (!currentUser.data.email_verified_at) {
-        router.push(`/verify-email?email=${encodeURIComponent(currentUser.data.email)}`);
-      } else if (currentUser.data.role === "admin") {
-        router.push(adminHome(currentUser.data));
-      } else if (!currentUser.data.advertiser_account && !currentUser.data.publisher_account) {
+      } else if (!user.email_verified_at) {
+        router.push(`/verify-email?email=${encodeURIComponent(user.email)}`);
+      } else if (user.role === "admin") {
+        router.push(adminHome(user));
+      } else if (!user.advertiser_account && !user.publisher_account) {
         router.push("/choose-path");
       } else {
-        router.push(currentUser.data.role === "publisher" ? "/publisher" : "/");
+        router.push(user.role === "publisher" ? "/publisher" : "/");
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to log in.");
@@ -65,11 +66,10 @@ export function LoginForm() {
           <Label htmlFor="email">Email</Label>
           <Input
             id="email"
+            name="email"
             type="email"
-            autoComplete="email"
+            autoComplete="username"
             placeholder="you@example.com"
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
             required
           />
         </AuthField>
@@ -82,10 +82,9 @@ export function LoginForm() {
           </div>
           <PasswordInput
             id="password"
+            name="password"
             autoComplete="current-password"
             placeholder="Enter your password"
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
             required
           />
         </AuthField>

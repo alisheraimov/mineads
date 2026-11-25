@@ -73,6 +73,54 @@ class AuthApiTest extends TestCase
         $this->assertDatabaseCount('advertiser_accounts', 0);
     }
 
+    public function test_new_user_can_verify_email_and_sign_in_to_complete_onboarding(): void
+    {
+        Notification::fake();
+        config(['services.frontend.url' => 'https://frontend.example.test']);
+
+        $this->postJson('/api/auth/register', [
+            'email' => 'NewPublisher@example.test',
+            'password' => 'password123',
+            'password_confirmation' => 'password123',
+        ])->assertCreated();
+
+        $user = User::query()->where('email', 'NewPublisher@example.test')->firstOrFail();
+        $notification = Notification::sent($user, VerifyEmail::class)->sole();
+
+        $this->get($notification->toMail($user)->actionUrl)
+            ->assertRedirect('https://frontend.example.test/choose-path?verified=1');
+        $this->assertTrue($user->fresh()->hasVerifiedEmail());
+        $this->getJson('/api/auth/me')->assertUnauthorized();
+
+        $login = $this->postJson('/api/auth/login', [
+            'email' => 'newpublisher@example.test',
+            'password' => 'password123',
+        ])->assertOk()
+            ->assertJsonPath('user.id', $user->id)
+            ->assertJsonPath('user.role', null);
+
+        $this->withToken($login->json('token'))
+            ->postJson('/api/auth/onboarding', ['role' => 'publisher'])
+            ->assertOk()
+            ->assertJsonPath('user.role', 'publisher');
+    }
+
+    public function test_case_insensitive_login_requires_an_unambiguous_email(): void
+    {
+        $user = User::factory()->create(['email' => 'Publisher@example.test']);
+        User::factory()->create(['email' => 'publisher@example.test']);
+
+        $this->postJson('/api/auth/login', [
+            'email' => 'PUBLISHER@example.test',
+            'password' => 'password',
+        ])->assertUnprocessable()->assertJsonValidationErrors('email');
+
+        $this->postJson('/api/auth/login', [
+            'email' => $user->email,
+            'password' => 'password',
+        ])->assertOk()->assertJsonPath('user.id', $user->id);
+    }
+
     public function test_database_does_not_assign_a_role_when_omitted(): void
     {
         $attributes = User::factory()->raw();

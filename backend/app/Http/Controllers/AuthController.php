@@ -46,12 +46,20 @@ class AuthController extends Controller
             'password' => ['required', 'string'],
         ]);
 
-        $user = User::query()
+        $user = User::withTrashed()
             ->where('email', $data['email'])
-            ->with(['advertiserAccount', 'publisherAccount'])
             ->first();
 
-        if (! $user || ! Hash::check($data['password'], $user->password)) {
+        if (! $user) {
+            $matches = User::withTrashed()
+                ->whereRaw('LOWER(email) = LOWER(?)', [$data['email']])
+                ->limit(2)
+                ->get();
+
+            $user = $matches->count() === 1 ? $matches->first() : null;
+        }
+
+        if (! $user || $user->trashed() || ! Hash::check($data['password'], $user->password)) {
             throw ValidationException::withMessages([
                 'email' => ['The provided credentials are incorrect.'],
             ]);
@@ -63,7 +71,7 @@ class AuthController extends Controller
             ], 403);
         }
 
-        return $this->tokenResponse($user);
+        return $this->tokenResponse($user->load(['advertiserAccount', 'publisherAccount']));
     }
 
     public function sendVerificationEmail(Request $request): JsonResponse
